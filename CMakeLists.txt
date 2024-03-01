@@ -2,32 +2,29 @@ cmake_minimum_required(VERSION 3.25)
 
 # -- configure external project download -- #
 
-include(FetchContent)
+set(CMAKE_POLICY_DEFAULT_CMP0077        NEW)
+set(EVENT__DISABLE_OPENSSL              ON)     # pass these options \ 
+set(JSONCPP_WITH_TESTS                  OFF)    # to external projects
+set(JSONCPP_WITH_POST_BUILD_UNITTEST    OFF)
 
-add_compile_options(-DEVENT__DISABLE_OPENSSL=ON)
+include(FetchContent)
 
 FetchContent_Declare(
     event
-    GIT_REPOSITORY  "https://github.com/libevent/libevent.git"
-    GIT_TAG         "release-2.1.12-stable"
-    EXCLUDE_FROM_ALL
-    QUIET
+    GIT_REPOSITORY      "https://github.com/libevent/libevent.git"
+    GIT_TAG             "release-2.1.12-stable"
 )
 
 FetchContent_Declare(
     jsoncpp
     GIT_REPOSITORY  "https://github.com/open-source-parsers/jsoncpp.git"
     GIT_TAG         "1.9.5"
-    EXCLUDE_FROM_ALL
-    QUIET
 )
 
 FetchContent_Declare(
     gtest
     GIT_REPOSITORY  "https://github.com/google/googletest"
     GIT_TAG         "v1.14.0"
-    EXCLUDE_FROM_ALL
-    QUIET
 )
 
 FetchContent_MakeAvailable(event jsoncpp gtest)
