@@ -79,8 +79,12 @@ RC Db::create_table(const char *table_name, int attribute_count, const AttrInfo 
 RC Db::drop_table(const char* table_name)
 {
   //TODO 从表list(opened_tables_)中找出表指针
-
-  //TODO 找不到表，要返回错误
+  RC rc = RC::SUCCESS;
+  if (opened_tables_.count(table_name) == 0) {
+    //DONE 找不到表，要返回错误
+    LOG_WARN("%s does not exist. ", table_name);
+    return RC::SCHEMA_TABLE_NOT_EXIST;
+  }
 
   //TODO 调用 table->destroy 函数，让表自己销毁资源
 
