@@ -144,21 +144,29 @@ RC Table::destroy(const char *dir) {
 
     // DONE 删除描述表元数据的文件
     std::string meta_file_path = table_meta_file(dir, name_.c_str());
-    unlink(meta_file_path.c_str());
+    if (unlink(meta_file_path.c_str())) {
+        LOG_ERROR("unlink %s is not successful", meta_file_path.c_str());
+        return RC::GENERIC_ERROR;
+    }
 
     // DONE 删除表数据文件
     std::string data_file_path = table_data_file(dir, name_.c_str());
-    unlink(data_file_path.c_str());
+    if (unlink(data_file_path.c_str())) {
+        LOG_ERROR("unlink %s is not successful", data_file_path.c_str());
+        return RC::GENERIC_ERROR;
+    }
 
     // TODO 清理所有的索引相关文件数据与索引元数据
     const int index_num = table_meta_.index_num();
     for (int i = 0; i < index_num; i++) {
         const IndexMeta *index_meta = table_meta_.index(i);
         std::string index_file_path = table_index_file(dir, name(), index_meta->name());
-        unlink(index_file_path.c_str());
+        if (unlink(index_file_path.c_str())) {
+            return RC::GENERIC_ERROR;
+        }
     }
 
-    return RC::GENERIC_ERROR;
+    return RC::SUCCESS;
 }
 
 RC Table::open(const char *meta_file, const char *base_dir) {

@@ -88,8 +88,7 @@ RC Db::drop_table(const char* table_name)
   }
 
   //DONE 调用 table->destroy 函数，让表自己销毁资源
-  std::string table_file_path = table_meta_file(path_.c_str(), table_name);
-  auto rc = table->destroy(table_file_path.c_str());
+  auto rc = table->destroy(path_.c_str());
 
   //DONE 删除成功的话，从表list中将它删除
   if (rc == RC::SUCCESS) {
