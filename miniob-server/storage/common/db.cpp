@@ -78,19 +78,26 @@ RC Db::create_table(const char *table_name, int attribute_count, const AttrInfo 
 
 RC Db::drop_table(const char* table_name)
 {
-  //TODO 从表list(opened_tables_)中找出表指针
-  RC rc = RC::SUCCESS;
-  if (opened_tables_.count(table_name) == 0) {
-    //DONE 找不到表，要返回错误
+  //DONE 从表list(opened_tables_)中找出表指针
+  Table* table = find_table(table_name);
+  
+  //DONE 找不到表，要返回错误
+  if (table == nullptr) {
     LOG_WARN("%s does not exist. ", table_name);
     return RC::SCHEMA_TABLE_NOT_EXIST;
   }
 
-  //TODO 调用 table->destroy 函数，让表自己销毁资源
+  //DONE 调用 table->destroy 函数，让表自己销毁资源
+  std::string table_file_path = table_meta_file(path_.c_str(), table_name);
+  auto rc = table->destroy(table_file_path.c_str());
 
-  //TODO 删除成功的话，从表list中将它删除
+  //DONE 删除成功的话，从表list中将它删除
+  if (rc == RC::SUCCESS) {
+    opened_tables_.erase(table_name);
+  }
+  
+  return rc;
 
-  return RC::GENERIC_ERROR;
 }
 
 Table *Db::find_table(const char *table_name) const
