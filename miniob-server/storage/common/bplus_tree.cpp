@@ -33,7 +33,7 @@ int attribute_comp(const char *first, const char *second, AttrType attr_type,
     float f1, f2;
     const char *s1, *s2;
     switch (attr_type) {
-    // TODO 模仿其他类型在相关方法中增加DATES类型
+    // DONE 模仿其他类型在相关方法中增加DATES类型
     case INTS: {
         i1 = *(int *)first;
         i2 = *(int *)second;
@@ -49,6 +49,11 @@ int attribute_comp(const char *first, const char *second, AttrType attr_type,
         s2 = second;
         return strncmp(s1, s2, attr_length);
     } break;
+    case DATES: {
+        i1 = *(int *)first;
+        i2 = *(int *)second;
+        return i1 - i2;
+    }
     default: {
         LOG_PANIC("Unknown attr type: %d", attr_type);
     }

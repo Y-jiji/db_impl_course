@@ -259,8 +259,8 @@ void TupleRecordConverter::add_record(const char *record)
         // TODO 从record中读取存储的日期
         int value = *(int *)(record + field_meta->offset());
         // TODO 将日期转换为满足输出格式的字符串，注意这里月份和天数，不足两位时需要填充0
-        char s[80];
-        sprintf(s, "%d-%d-%d", value >> 16, value >> 8 & 255, value & 255);
+        char s[200];
+        sprintf(s, "%u-%u-%u", value / 10000, (value / 100) % 100, value % 100);
         // TODO 将字符串添加到tuple中
         tuple.add(s, strlen(s));
       } break;

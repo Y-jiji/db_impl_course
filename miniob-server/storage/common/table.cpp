@@ -140,7 +140,7 @@ RC Table::destroy(const char *dir) {
         return RC::INVALID_ARGUMENT;
     }
     std::string name_ = std::string(name());
-    LOG_INFO("Begin to drop table %s:%s", dir, name_);
+    LOG_INFO("Begin to drop table %s:%s", dir, name_.c_str());
 
     // DONE 删除描述表元数据的文件
     std::string meta_file_path = table_meta_file(dir, name_.c_str());
@@ -156,7 +156,7 @@ RC Table::destroy(const char *dir) {
         return RC::GENERIC_ERROR;
     }
 
-    // TODO 清理所有的索引相关文件数据与索引元数据
+    // DONE 清理所有的索引相关文件数据与索引元数据
     const int index_num = table_meta_.index_num();
     for (int i = 0; i < index_num; i++) {
         const IndexMeta *index_meta = table_meta_.index(i);
