@@ -1,10 +1,10 @@
 
 %{
 
-#include "sql/parser/parse_defs.h"
-#include "sql/parser/yacc_sql.tab.h"
-#include "sql/parser/lex.yy.h"
-// #include "common/log/log.h" // 包含C++中的头文件
+#include <sql/parser/parse_defs.h>
+#include <sql/parser/yacc_sql.tab.h>
+#include <sql/parser/lex.yy.h>
+// #include <common/log/log.h> // 包含C++中的头文件
 
 #include<stdio.h>
 #include<stdlib.h>

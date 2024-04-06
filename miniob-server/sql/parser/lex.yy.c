@@ -546,7 +546,7 @@ static yyconst flex_int16_t yy_chk[325] =
 
 struct ParserContext;
 
-#include "yacc_sql.tab.h"
+#include <yacc_sql.tab.h>
 extern int atoi();
 extern double atof();
 

@@ -70,10 +70,10 @@
 #line 2 "yacc_sql.y"
 
 
-#include "sql/parser/parse_defs.h"
-#include "sql/parser/yacc_sql.tab.h"
-#include "sql/parser/lex.yy.h"
-// #include "common/log/log.h" // 包含C++中的头文件
+#include <sql/parser/parse_defs.h>
+#include <sql/parser/yacc_sql.tab.h>
+#include <sql/parser/lex.yy.h>
+// #include <common/log/log.h> // 包含C++中的头文件
 
 #include<stdio.h>
 #include<stdlib.h>
@@ -147,7 +147,7 @@ ParserContext *get_context(yyscan_t scanner)
 #  endif
 # endif
 
-#include "yacc_sql.tab.h"
+#include <yacc_sql.tab.h>
 /* Symbol kind.  */
 enum yysymbol_kind_t
 {

@@ -81,7 +81,7 @@ target_include_directories(common PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/include)
 # -- configure server build command -- #
 
 file(GLOB_RECURSE SRC miniob-server/*.cpp miniob-server/*.c)
-file(GLOB_RECURSE INC miniob-server/*.h)
+file(GLOB_RECURSE INC miniob-server/*.hpp miniob-server/*.h)
 
 foreach(F ${INC})
     file(RELATIVE_PATH REL ${CMAKE_CURRENT_SOURCE_DIR}/miniob-server ${F})
@@ -93,9 +93,9 @@ add_executable(miniob-server ${SRC})
 target_link_libraries(miniob-server PUBLIC event jsoncpp_static dl Threads::Threads common)
 target_include_directories(miniob-server PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/miniob-server-headers)
 
-add_library(miniob-server-lib STATIC ${SRC}) # this library is created for unittests
-target_link_libraries(miniob-server-lib PUBLIC event jsoncpp_static dl Threads::Threads common)
-target_include_directories(miniob-server-lib PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/miniob-server-headers)
+# add_library(miniob-server-lib STATIC ${SRC}) # this library is created for unittests
+# target_link_libraries(miniob-server-lib PUBLIC event jsoncpp_static dl Threads::Threads common)
+# target_include_directories(miniob-server-lib PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/miniob-server-headers)
 
 # -- configure client build command -- #
 

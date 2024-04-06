@@ -1,0 +1,19 @@
+# Run manually to reformat a file:
+# clang-format -i --style=file <file>
+# find . -iname '*.cc' -o -iname '*.h' -o -iname '*.h.in' | xargs clang-format -i --style=file
+Language: Cpp
+DerivePointerAlignment: false
+PointerAlignment: Left
+BasedOnStyle: LLVM
+IndentWidth: 4
+AccessModifierOffset: 0
+EmptyLineBeforeAccessModifier: Always
+AlignConsecutiveAssignments:
+  Enabled: true
+  AcrossEmptyLines: true
+  AcrossComments: false
+AlignConsecutiveDeclarations:
+  Enabled: true
+  AcrossEmptyLines: true
+  AcrossComments: false
+FixNamespaceComments: true
