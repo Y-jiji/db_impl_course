@@ -20,7 +20,7 @@ See the Mulan PSL v2 for more details. */
 #include <unordered_map>
 #include <unordered_set>
 
-#include <rc.h>
+#include <result_code.h>
 #include <sql/parser/parse.h>
 #include <storage/common/record_manager.h>
 
@@ -80,14 +80,14 @@ class Transaction {
     ~Transaction();
 
     public:
-    ReturnCode   insert_record(Table* table, Record* record);
-    ReturnCode   delete_record(Table* table, Record* record);
+    ResultCode   insert_record(Table* table, Record* record);
+    ResultCode   delete_record(Table* table, Record* record);
 
-    ReturnCode   commit();
-    ReturnCode   rollback();
+    ResultCode   commit();
+    ResultCode   rollback();
 
-    ReturnCode   commit_insert(Table* table, Record& record);
-    ReturnCode   rollback_delete(Table* table, Record& record);
+    ResultCode   commit_insert(Table* table, Record& record);
+    ResultCode   rollback_delete(Table* table, Record& record);
 
     bool is_visible(Table* table, const Record* record);
 

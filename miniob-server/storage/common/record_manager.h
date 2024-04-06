@@ -72,19 +72,19 @@ class RecordPageHandler {
     public:
     RecordPageHandler();
     ~RecordPageHandler();
-    ReturnCode init(DiskBufferPool& buffer_pool, int file_id, PageNum page_num);
-    ReturnCode init_empty_page(DiskBufferPool& buffer_pool, int file_id,
+    ResultCode init(DiskBufferPool& buffer_pool, int file_id, PageNum page_num);
+    ResultCode init_empty_page(DiskBufferPool& buffer_pool, int file_id,
                        PageNum page_num, int record_size);
-    ReturnCode cleanup();
+    ResultCode cleanup();
 
-    ReturnCode insert_record(const char* data, RID* rid);
-    ReturnCode update_record(const Record* rec);
+    ResultCode insert_record(const char* data, RID* rid);
+    ResultCode update_record(const Record* rec);
 
     template <class RecordUpdater>
-    ReturnCode update_record_in_place(const RID* rid, RecordUpdater updater) {
+    ResultCode update_record_in_place(const RID* rid, RecordUpdater updater) {
         Record record;
-        ReturnCode     rc = get_record(rid, &record);
-        if (rc != ReturnCode::SUCCESS) {
+        ResultCode     rc = get_record(rid, &record);
+        if (rc != ResultCode::SUCCESS) {
             return rc;
         }
         rc = updater(record);
@@ -92,11 +92,11 @@ class RecordPageHandler {
         return rc;
     }
 
-    ReturnCode      delete_record(const RID* rid);
+    ResultCode      delete_record(const RID* rid);
 
-    ReturnCode      get_record(const RID* rid, Record* rec);
-    ReturnCode      get_first_record(Record* rec);
-    ReturnCode      get_next_record(Record* rec);
+    ResultCode      get_record(const RID* rid, Record* rec);
+    ResultCode      get_first_record(Record* rec);
+    ResultCode      get_next_record(Record* rec);
 
     PageNum get_page_num() const;
 
@@ -120,7 +120,7 @@ class RecordPageHandler {
 class RecordFileHandler {
     public:
     RecordFileHandler();
-    ReturnCode   init(DiskBufferPool* buffer_pool, int file_id);
+    ResultCode   init(DiskBufferPool* buffer_pool, int file_id);
     void close();
 
     /**
@@ -129,14 +129,14 @@ class RecordFileHandler {
      * @param rec
      * @return
      */
-    ReturnCode update_record(const Record* rec);
+    ResultCode update_record(const Record* rec);
 
     /**
      * 从指定文件中删除标识符为rid的记录
      * @param rid
      * @return
      */
-    ReturnCode delete_record(const RID* rid);
+    ResultCode delete_record(const RID* rid);
 
     /**
      * 插入一个新的记录到指定文件中，pData为指向新纪录内容的指针，返回该记录的标识符rid
@@ -144,7 +144,7 @@ class RecordFileHandler {
      * @param rid
      * @return
      */
-    ReturnCode insert_record(const char* data, int record_size, RID* rid);
+    ResultCode insert_record(const char* data, int record_size, RID* rid);
 
     /**
      * 获取指定文件中标识符为rid的记录内容到rec指向的记录结构中
@@ -152,15 +152,15 @@ class RecordFileHandler {
      * @param rec
      * @return
      */
-    ReturnCode get_record(const RID* rid, Record* rec);
+    ResultCode get_record(const RID* rid, Record* rec);
 
     template <class RecordUpdater> // 改成普通模式, 不使用模板
-    ReturnCode update_record_in_place(const RID* rid, RecordUpdater updater) {
+    ResultCode update_record_in_place(const RID* rid, RecordUpdater updater) {
 
-        ReturnCode                rc = ReturnCode::SUCCESS;
+        ResultCode                rc = ResultCode::SUCCESS;
         RecordPageHandler page_handler;
         if ((rc != page_handler.init(*disk_buffer_pool_, file_id_,
-                                     rid->page_num)) != ReturnCode::SUCCESS) {
+                                     rid->page_num)) != ResultCode::SUCCESS) {
             return rc;
         }
 
@@ -191,16 +191,16 @@ class RecordFileScanner {
      * @param conditions
      * @return
      */
-    ReturnCode open_scan(DiskBufferPool& buffer_pool, int file_id,
+    ResultCode open_scan(DiskBufferPool& buffer_pool, int file_id,
                  ConditionFilter* condition_filter);
 
     /**
      * 关闭一个文件扫描，释放相应的资源
      * @return
      */
-    ReturnCode close_scan();
+    ResultCode close_scan();
 
-    ReturnCode get_first_record(Record* rec);
+    ResultCode get_first_record(Record* rec);
 
     /**
      * 获取下一个符合扫描条件的记录。
@@ -209,7 +209,7 @@ class RecordFileScanner {
      * @param rec 上一条记录。如果为NULL，就返回第一条记录
      * @return
      */
-    ReturnCode get_next_record(Record* rec);
+    ResultCode get_next_record(Record* rec);
 
     private:
     DiskBufferPool*   disk_buffer_pool_;

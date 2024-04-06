@@ -14,7 +14,7 @@ See the Mulan PSL v2 for more details. */
 #ifndef __OBSERVER_STORAGE_COMMON_CONDITION_FILTER_H_
 #define __OBSERVER_STORAGE_COMMON_CONDITION_FILTER_H_
 
-#include <rc.h>
+#include <result_code.h>
 #include <sql/parser/parse.h>
 
 struct Record;
@@ -44,9 +44,9 @@ class DefaultConditionFilter : public ConditionFilter {
     DefaultConditionFilter();
     virtual ~DefaultConditionFilter();
 
-    ReturnCode init(const ConDesc& left, const ConDesc& right, AttrType attr_type,
+    ResultCode init(const ConDesc& left, const ConDesc& right, AttrType attr_type,
             CompOp comp_op);
-    ReturnCode init(Table& table, const Condition& condition);
+    ResultCode init(Table& table, const Condition& condition);
 
     virtual bool filter(const Record& rec) const;
 
@@ -69,8 +69,8 @@ class CompositeConditionFilter : public ConditionFilter {
     CompositeConditionFilter() = default;
     virtual ~CompositeConditionFilter();
 
-    ReturnCode init(const ConditionFilter* filters[], int filter_num);
-    ReturnCode init(Table& table, const Condition* conditions, int condition_num);
+    ResultCode init(const ConditionFilter* filters[], int filter_num);
+    ResultCode init(Table& table, const Condition* conditions, int condition_num);
     virtual bool filter(const Record& rec) const;
 
     public:
@@ -78,7 +78,7 @@ class CompositeConditionFilter : public ConditionFilter {
     const ConditionFilter& filter(int index) const { return *filters_[index]; }
 
     private:
-    ReturnCode init(const ConditionFilter* filters[], int filter_num, bool own_memory);
+    ResultCode init(const ConditionFilter* filters[], int filter_num, bool own_memory);
 
     private:
     const ConditionFilter** filters_    = nullptr;

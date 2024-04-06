@@ -112,12 +112,12 @@ DiskBufferPool::~DiskBufferPool() {
     LOG_INFO("Exit");
 }
 
-ReturnCode DiskBufferPool::create_file(const char* file_name) {
+ResultCode DiskBufferPool::create_file(const char* file_name) {
     int fd = open(file_name, O_RDWR | O_CREAT | O_EXCL, S_IREAD | S_IWRITE);
     if (fd < 0) {
         LOG_ERROR("Failed to create %s, due to %s.", file_name,
                   strerror(errno));
-        return ReturnCode::SCHEMA_DB_EXIST;
+        return ResultCode::SCHEMA_DB_EXIST;
     }
 
     close(fd);
@@ -129,7 +129,7 @@ ReturnCode DiskBufferPool::create_file(const char* file_name) {
     if (fd < 0) {
         LOG_ERROR("Failed to open for readwrite %s, due to %s.", file_name,
                   strerror(errno));
-        return ReturnCode::IOERR_ACCESS;
+        return ResultCode::IOERR_ACCESS;
     }
 
     Page page;
@@ -146,22 +146,22 @@ ReturnCode DiskBufferPool::create_file(const char* file_name) {
         LOG_ERROR("Failed to seek file %s to position 0, due to %s .",
                   file_name, strerror(errno));
         close(fd);
-        return ReturnCode::IOERR_SEEK;
+        return ResultCode::IOERR_SEEK;
     }
 
     if (write(fd, (char*)&page, sizeof(Page)) != sizeof(Page)) {
         LOG_ERROR("Failed to write header to file %s, due to %s.", file_name,
                   strerror(errno));
         close(fd);
-        return ReturnCode::IOERR_WRITE;
+        return ResultCode::IOERR_WRITE;
     }
 
     close(fd);
     LOG_INFO("Successfully create %s.", file_name);
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
-ReturnCode DiskBufferPool::open_file(const char* file_name, int* file_id) {
+ResultCode DiskBufferPool::open_file(const char* file_name, int* file_id) {
     int fd, i, size = 0, empty_id = -1;
     // This part isn't gentle, the better method is using LRU queue.
     for (i = 0; i < MAX_OPEN_FILE; i++) {
@@ -170,7 +170,7 @@ ReturnCode DiskBufferPool::open_file(const char* file_name, int* file_id) {
             if (!strcmp(open_list_[i]->file_name, file_name)) {
                 *file_id = i;
                 LOG_INFO("%s has already been opened.", file_name);
-                return ReturnCode::SUCCESS;
+                return ResultCode::SUCCESS;
             }
         } else if (empty_id == -1) {
             empty_id = i;
@@ -182,13 +182,13 @@ ReturnCode DiskBufferPool::open_file(const char* file_name, int* file_id) {
         LOG_ERROR(
             "Failed to open file %s, because too much files have been opened.",
             file_name);
-        return ReturnCode::BUFFERPOOL_OPEN_TOO_MANY_FILES;
+        return ResultCode::BUFFERPOOL_OPEN_TOO_MANY_FILES;
     }
 
     if ((fd = open(file_name, O_RDWR)) < 0) {
         LOG_ERROR("Failed to open file %s, because %s.", file_name,
                   strerror(errno));
-        return ReturnCode::IOERR_ACCESS;
+        return ResultCode::IOERR_ACCESS;
     }
     LOG_INFO("Successfully open file %s.", file_name);
 
@@ -196,14 +196,14 @@ ReturnCode DiskBufferPool::open_file(const char* file_name, int* file_id) {
     if (file_handle == nullptr) {
         LOG_ERROR("Failed to alloc memory of BPFileHandle for %s.", file_name);
         close(fd);
-        return ReturnCode::NOMEM;
+        return ResultCode::NOMEM;
     }
 
-    ReturnCode tmp                 = ReturnCode::SUCCESS;
+    ResultCode tmp                 = ResultCode::SUCCESS;
     file_handle->bopen     = true;
     file_handle->file_name = strdup(file_name);
     file_handle->file_desc = fd;
-    if ((tmp = allocate_page(&file_handle->hdr_frame)) != ReturnCode::SUCCESS) {
+    if ((tmp = allocate_page(&file_handle->hdr_frame)) != ResultCode::SUCCESS) {
         LOG_ERROR("Failed to allocate block for %s's BPFileHandle.", file_name);
         delete file_handle;
         close(fd);
@@ -214,7 +214,7 @@ ReturnCode DiskBufferPool::open_file(const char* file_name, int* file_id) {
     file_handle->hdr_frame->pin_count = 1;
     file_handle->hdr_frame->acc_time  = current_time();
     if ((tmp = load_page(0, file_handle, file_handle->hdr_frame)) !=
-        ReturnCode::SUCCESS) {
+        ResultCode::SUCCESS) {
         LOG_ERROR("Failed to load first page of %s, due to %s.", file_name,
                   strerror(errno));
         file_handle->hdr_frame->pin_count = 0;
@@ -233,19 +233,19 @@ ReturnCode DiskBufferPool::open_file(const char* file_name, int* file_id) {
 
     LOG_INFO("Successfully open %s. file_id=%d, hdr_frame=%p", file_name,
              *file_id, file_handle->hdr_frame);
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
-ReturnCode DiskBufferPool::close_file(int file_id) {
-    ReturnCode tmp;
-    if ((tmp = check_file_id(file_id)) != ReturnCode::SUCCESS) {
+ResultCode DiskBufferPool::close_file(int file_id) {
+    ResultCode tmp;
+    if ((tmp = check_file_id(file_id)) != ResultCode::SUCCESS) {
         LOG_ERROR("Failed to close file, due to invalid fileId %d", file_id);
         return tmp;
     }
 
     BPFileHandle* file_handle = open_list_[file_id];
     file_handle->hdr_frame->pin_count--;
-    if ((tmp = purge_all_pages(file_handle)) != ReturnCode::SUCCESS) {
+    if ((tmp = purge_all_pages(file_handle)) != ResultCode::SUCCESS) {
         file_handle->hdr_frame->pin_count++;
         LOG_ERROR(
             "Failed to close file %d:%s, due to failed to purge all pages.",
@@ -258,25 +258,25 @@ ReturnCode DiskBufferPool::close_file(int file_id) {
     if (close(file_handle->file_desc) < 0) {
         LOG_ERROR("Failed to close fileId:%d, fileName:%s, error:%s", file_id,
                   file_handle->file_name, strerror(errno));
-        return ReturnCode::IOERR_CLOSE;
+        return ResultCode::IOERR_CLOSE;
     }
     open_list_[file_id] = nullptr;
     LOG_INFO("Successfully close file %d:%s.", file_id, file_handle->file_name);
     delete file_handle;
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
-ReturnCode DiskBufferPool::get_this_page(int file_id, PageNum page_num,
+ResultCode DiskBufferPool::get_this_page(int file_id, PageNum page_num,
                                  BPPageHandle* page_handle) {
-    ReturnCode tmp;
-    if ((tmp = check_file_id(file_id)) != ReturnCode::SUCCESS) {
+    ResultCode tmp;
+    if ((tmp = check_file_id(file_id)) != ResultCode::SUCCESS) {
         LOG_ERROR("Failed to load page %d, due to invalid fileId %d", page_num,
                   file_id);
         return tmp;
     }
 
     BPFileHandle* file_handle = open_list_[file_id];
-    if ((tmp = check_page_num(page_num, file_handle)) != ReturnCode::SUCCESS) {
+    if ((tmp = check_page_num(page_num, file_handle)) != ResultCode::SUCCESS) {
         LOG_ERROR("Failed to load page %s:%d, due to invalid pageNum.",
                   file_handle->file_name, page_num);
         return tmp;
@@ -291,11 +291,11 @@ ReturnCode DiskBufferPool::get_this_page(int file_id, PageNum page_num,
 
         bp_manager_.mark_modified(used_match_frame);
 
-        return ReturnCode::SUCCESS;
+        return ResultCode::SUCCESS;
     }
 
     // Allocate one page and load the data into this page
-    if ((tmp = allocate_page(&(page_handle->frame))) != ReturnCode::SUCCESS) {
+    if ((tmp = allocate_page(&(page_handle->frame))) != ResultCode::SUCCESS) {
         LOG_ERROR("Failed to load page %s:%d, due to failed to alloc page.",
                   file_handle->file_name, page_num);
         return tmp;
@@ -305,7 +305,7 @@ ReturnCode DiskBufferPool::get_this_page(int file_id, PageNum page_num,
     page_handle->frame->pin_count = 1;
     page_handle->frame->acc_time  = current_time();
     if ((tmp = load_page(page_num, file_handle, page_handle->frame)) !=
-        ReturnCode::SUCCESS) {
+        ResultCode::SUCCESS) {
         LOG_ERROR("Failed to load page %s:%d", file_handle->file_name,
                   page_num);
         page_handle->frame->pin_count = 0;
@@ -314,12 +314,12 @@ ReturnCode DiskBufferPool::get_this_page(int file_id, PageNum page_num,
     }
 
     page_handle->open = true;
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
-ReturnCode DiskBufferPool::allocate_page(int file_id, BPPageHandle* page_handle) {
-    ReturnCode tmp;
-    if ((tmp = check_file_id(file_id)) != ReturnCode::SUCCESS) {
+ResultCode DiskBufferPool::allocate_page(int file_id, BPPageHandle* page_handle) {
+    ResultCode tmp;
+    if ((tmp = check_file_id(file_id)) != ResultCode::SUCCESS) {
         LOG_ERROR("Failed to alloc page, due to invalid fileId %d", file_id);
         return tmp;
     }
@@ -342,7 +342,7 @@ ReturnCode DiskBufferPool::allocate_page(int file_id, BPPageHandle* page_handle)
         }
     }
 
-    if ((tmp = allocate_page(&(page_handle->frame))) != ReturnCode::SUCCESS) {
+    if ((tmp = allocate_page(&(page_handle->frame))) != ResultCode::SUCCESS) {
         LOG_ERROR("Failed to allocate page %s, due to no free page.",
                   file_handle->file_name);
         return tmp;
@@ -366,7 +366,7 @@ ReturnCode DiskBufferPool::allocate_page(int file_id, BPPageHandle* page_handle)
         file_handle->file_sub_header->page_count - 1;
 
     // Use flush operation to extension file
-    if ((tmp = flush_page(page_handle->frame)) != ReturnCode::SUCCESS) {
+    if ((tmp = flush_page(page_handle->frame)) != ResultCode::SUCCESS) {
         LOG_WARN("Failed to alloc page %s , due to failed to extend one page.",
                  file_handle->file_name);
         // skip return false, delay flush the extended page
@@ -374,29 +374,29 @@ ReturnCode DiskBufferPool::allocate_page(int file_id, BPPageHandle* page_handle)
     }
 
     page_handle->open = true;
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
-ReturnCode DiskBufferPool::get_page_num(BPPageHandle* page_handle, PageNum* page_num) {
+ResultCode DiskBufferPool::get_page_num(BPPageHandle* page_handle, PageNum* page_num) {
     if (!page_handle->open)
-        return ReturnCode::BUFFERPOOL_CLOSED;
+        return ResultCode::BUFFERPOOL_CLOSED;
     *page_num = page_handle->frame->page.page_num;
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
-ReturnCode DiskBufferPool::get_data(BPPageHandle* page_handle, char** data) {
+ResultCode DiskBufferPool::get_data(BPPageHandle* page_handle, char** data) {
     if (!page_handle->open)
-        return ReturnCode::BUFFERPOOL_CLOSED;
+        return ResultCode::BUFFERPOOL_CLOSED;
     *data = page_handle->frame->page.data;
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
-ReturnCode DiskBufferPool::mark_dirty(BPPageHandle* page_handle) {
+ResultCode DiskBufferPool::mark_dirty(BPPageHandle* page_handle) {
     page_handle->frame->dirty = true;
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
-ReturnCode DiskBufferPool::unpin_page(BPPageHandle* page_handle) {
+ResultCode DiskBufferPool::unpin_page(BPPageHandle* page_handle) {
     page_handle->open = false;
     if (--page_handle->frame->pin_count == 0) {
         int  file_desc = page_handle->frame->file_desc;
@@ -414,7 +414,7 @@ ReturnCode DiskBufferPool::unpin_page(BPPageHandle* page_handle) {
         }
     }
 
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
 /**
@@ -425,22 +425,22 @@ ReturnCode DiskBufferPool::unpin_page(BPPageHandle* page_handle) {
  * @param pageNum
  * @return
  */
-ReturnCode DiskBufferPool::dispose_page(int file_id, PageNum page_num) {
-    ReturnCode rc;
-    if ((rc = check_file_id(file_id)) != ReturnCode::SUCCESS) {
+ResultCode DiskBufferPool::dispose_page(int file_id, PageNum page_num) {
+    ResultCode rc;
+    if ((rc = check_file_id(file_id)) != ResultCode::SUCCESS) {
         LOG_ERROR("Failed to alloc page, due to invalid fileId %d", file_id);
         return rc;
     }
 
     BPFileHandle* file_handle = open_list_[file_id];
-    if ((rc = check_page_num(page_num, file_handle)) != ReturnCode::SUCCESS) {
+    if ((rc = check_page_num(page_num, file_handle)) != ResultCode::SUCCESS) {
         LOG_ERROR("Failed to dispose page %s:%d, due to invalid pageNum",
                   file_handle->file_name, page_num);
         return rc;
     }
 
     rc = purge_page(file_handle, page_num);
-    if (rc != ReturnCode::SUCCESS) {
+    if (rc != ResultCode::SUCCESS) {
         LOG_INFO("Dispose page %s:%d later, due to this page is being used",
                  file_handle->file_name, page_num);
 
@@ -464,12 +464,12 @@ ReturnCode DiskBufferPool::dispose_page(int file_id, PageNum page_num) {
     // file_handle->pFileSubHeader->pageCount--;
     char tmp = 1 << (page_num % 8);
     file_handle->bitmap[page_num / 8] &= ~tmp;
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
-ReturnCode DiskBufferPool::purge_page(int file_id, PageNum page_num) {
-    ReturnCode rc;
-    if ((rc = check_file_id(file_id)) != ReturnCode::SUCCESS) {
+ResultCode DiskBufferPool::purge_page(int file_id, PageNum page_num) {
+    ResultCode rc;
+    if ((rc = check_file_id(file_id)) != ResultCode::SUCCESS) {
         LOG_ERROR("Failed to alloc page, due to invalid fileId %d", file_id);
         return rc;
     }
@@ -477,16 +477,16 @@ ReturnCode DiskBufferPool::purge_page(int file_id, PageNum page_num) {
     return purge_page(file_handle, page_num);
 }
 
-ReturnCode DiskBufferPool::purge_page(Frame* buf) {
+ResultCode DiskBufferPool::purge_page(Frame* buf) {
     if (buf->pin_count > 0) {
         LOG_INFO("Begin to free page %d of %d, but it's pinned, pin_count:%d.",
                  buf->page.page_num, buf->file_desc, buf->pin_count);
-        return ReturnCode::LOCKED_UNLOCK;
+        return ResultCode::LOCKED_UNLOCK;
     }
 
     if (buf->dirty) {
-        ReturnCode rc = flush_page(buf);
-        if (rc != ReturnCode::SUCCESS) {
+        ResultCode rc = flush_page(buf);
+        if (rc != ResultCode::SUCCESS) {
             LOG_WARN("Failed to flush page %d of %d during purge page.",
                      buf->page.page_num, buf->file_desc);
             return rc;
@@ -496,7 +496,7 @@ ReturnCode DiskBufferPool::purge_page(Frame* buf) {
     LOG_DEBUG("Successfully purge frame =%p, page %d of %d", buf,
               buf->page.page_num, buf->file_desc);
     bp_manager_.free(buf);
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
 /**
@@ -506,18 +506,18 @@ ReturnCode DiskBufferPool::purge_page(Frame* buf) {
  * @param pageNum
  * @return
  */
-ReturnCode DiskBufferPool::purge_page(BPFileHandle* file_handle, PageNum page_num) {
+ResultCode DiskBufferPool::purge_page(BPFileHandle* file_handle, PageNum page_num) {
     Frame* used_frame = bp_manager_.get(file_handle->file_desc, page_num);
     if (used_frame != nullptr) {
         return purge_page(used_frame);
     }
 
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
-ReturnCode DiskBufferPool::purge_all_pages(int file_id) {
-    ReturnCode rc = check_file_id(file_id);
-    if (rc != ReturnCode::SUCCESS) {
+ResultCode DiskBufferPool::purge_all_pages(int file_id) {
+    ResultCode rc = check_file_id(file_id);
+    if (rc != ResultCode::SUCCESS) {
         LOG_ERROR("Failed to flush pages due to invalid file_id %d", file_id);
         return rc;
     }
@@ -526,7 +526,7 @@ ReturnCode DiskBufferPool::purge_all_pages(int file_id) {
     return purge_all_pages(file_handle);
 }
 
-ReturnCode DiskBufferPool::purge_all_pages(BPFileHandle* file_handle) {
+ResultCode DiskBufferPool::purge_all_pages(BPFileHandle* file_handle) {
     std::list<Frame*> used = bp_manager_.find_list(file_handle->file_desc);
     for (std::list<Frame*>::iterator it = used.begin(); it != used.end();
          ++it) {
@@ -537,8 +537,8 @@ ReturnCode DiskBufferPool::purge_all_pages(BPFileHandle* file_handle) {
             continue;
         }
         if (frame->dirty) {
-            ReturnCode rc = flush_page(frame);
-            if (rc != ReturnCode::SUCCESS) {
+            ResultCode rc = flush_page(frame);
+            if (rc != ResultCode::SUCCESS) {
                 LOG_ERROR("Failed to flush all pages' of %s.",
                           file_handle->file_name);
                 return rc;
@@ -546,10 +546,10 @@ ReturnCode DiskBufferPool::purge_all_pages(BPFileHandle* file_handle) {
         }
         bp_manager_.free(frame);
     }
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
-ReturnCode DiskBufferPool::flush_page(Frame* frame) {
+ResultCode DiskBufferPool::flush_page(Frame* frame) {
     // The better way is use mmap the block into memory,
     // so it is easier to flush data to file.
 
@@ -557,37 +557,37 @@ ReturnCode DiskBufferPool::flush_page(Frame* frame) {
     if (lseek(frame->file_desc, offset, SEEK_SET) == offset - 1) {
         LOG_ERROR("Failed to flush page %lld of %d due to failed to seek %s.",
                   offset, frame->file_desc, strerror(errno));
-        return ReturnCode::IOERR_SEEK;
+        return ResultCode::IOERR_SEEK;
     }
 
     if (write(frame->file_desc, &(frame->page), sizeof(Page)) != sizeof(Page)) {
         LOG_ERROR("Failed to flush page %lld of %d due to %s.", offset,
                   frame->file_desc, strerror(errno));
-        return ReturnCode::IOERR_WRITE;
+        return ResultCode::IOERR_WRITE;
     }
     frame->dirty = false;
     LOG_DEBUG("Flush block. file desc=%d, page num=%d", frame->file_desc,
               frame->page.page_num);
 
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
-ReturnCode DiskBufferPool::allocate_page(Frame** buffer) {
+ResultCode DiskBufferPool::allocate_page(Frame** buffer) {
     Frame* frame = bp_manager_.alloc();
     if (frame != nullptr) {
         *buffer = frame;
-        return ReturnCode::SUCCESS;
+        return ResultCode::SUCCESS;
     }
 
     frame = bp_manager_.begin_purge();
     if (frame == nullptr) {
         LOG_ERROR("All pages have been used and pinned.");
-        return ReturnCode::NOMEM;
+        return ResultCode::NOMEM;
     }
 
     if (frame->dirty) {
-        ReturnCode rc = flush_page(frame);
-        if (rc != ReturnCode::SUCCESS) {
+        ResultCode rc = flush_page(frame);
+        if (rc != ResultCode::SUCCESS) {
             LOG_ERROR(
                 "Failed to aclloc block due to failed to flush old block.");
             return rc;
@@ -597,58 +597,58 @@ ReturnCode DiskBufferPool::allocate_page(Frame** buffer) {
     bp_manager_.mark_modified(frame);
 
     *buffer = frame;
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
-ReturnCode DiskBufferPool::check_file_id(int file_id) {
+ResultCode DiskBufferPool::check_file_id(int file_id) {
     if (file_id < 0 || file_id >= MAX_OPEN_FILE) {
         LOG_ERROR("Invalid fileId:%d.", file_id);
-        return ReturnCode::BUFFERPOOL_ILLEGAL_FILE_ID;
+        return ResultCode::BUFFERPOOL_ILLEGAL_FILE_ID;
     }
     if (!open_list_[file_id]) {
         LOG_ERROR("Invalid fileId:%d, it is empty.", file_id);
-        return ReturnCode::BUFFERPOOL_ILLEGAL_FILE_ID;
+        return ResultCode::BUFFERPOOL_ILLEGAL_FILE_ID;
     }
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
-ReturnCode DiskBufferPool::get_page_count(int file_id, int* page_count) {
-    ReturnCode rc = ReturnCode::SUCCESS;
-    if ((rc = check_file_id(file_id)) != ReturnCode::SUCCESS) {
+ResultCode DiskBufferPool::get_page_count(int file_id, int* page_count) {
+    ResultCode rc = ResultCode::SUCCESS;
+    if ((rc = check_file_id(file_id)) != ResultCode::SUCCESS) {
         return rc;
     }
     *page_count = open_list_[file_id]->file_sub_header->page_count;
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
-ReturnCode DiskBufferPool::check_page_num(PageNum page_num, BPFileHandle* file_handle) {
+ResultCode DiskBufferPool::check_page_num(PageNum page_num, BPFileHandle* file_handle) {
     if (page_num >= file_handle->file_sub_header->page_count) {
         LOG_ERROR("Invalid pageNum:%d, file's name:%s", page_num,
                   file_handle->file_name);
-        return ReturnCode::BUFFERPOOL_INVALID_PAGE_NUM;
+        return ResultCode::BUFFERPOOL_INVALID_PAGE_NUM;
     }
     if ((file_handle->bitmap[page_num / 8] & (1 << (page_num % 8))) == 0) {
         LOG_ERROR("Invalid pageNum:%d, file's name:%s", page_num,
                   file_handle->file_name);
-        return ReturnCode::BUFFERPOOL_INVALID_PAGE_NUM;
+        return ResultCode::BUFFERPOOL_INVALID_PAGE_NUM;
     }
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
-ReturnCode DiskBufferPool::load_page(PageNum page_num, BPFileHandle* file_handle,
+ResultCode DiskBufferPool::load_page(PageNum page_num, BPFileHandle* file_handle,
                              Frame* frame) {
     s64_t offset = ((s64_t)page_num) * sizeof(Page);
     if (lseek(file_handle->file_desc, offset, SEEK_SET) == -1) {
         LOG_ERROR("Failed to load page %s:%d, due to failed to lseek:%s.",
                   file_handle->file_name, page_num, strerror(errno));
 
-        return ReturnCode::IOERR_SEEK;
+        return ResultCode::IOERR_SEEK;
     }
     if (read(file_handle->file_desc, &(frame->page), sizeof(Page)) !=
         sizeof(Page)) {
         LOG_ERROR("Failed to load page %s:%d, due to failed to read data:%s.",
                   file_handle->file_name, page_num, strerror(errno));
-        return ReturnCode::IOERR_READ;
+        return ResultCode::IOERR_READ;
     }
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }

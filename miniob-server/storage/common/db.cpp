@@ -31,16 +31,16 @@ Db::~Db() {
     LOG_INFO("Db has been closed: %s", name_.c_str());
 }
 
-ReturnCode Db::init(const char* name, const char* dbpath) {
+ResultCode Db::init(const char* name, const char* dbpath) {
 
     if (common::is_blank(name)) {
         LOG_ERROR("Failed to init DB, name cannot be empty");
-        return ReturnCode::INVALID_ARGUMENT;
+        return ResultCode::INVALID_ARGUMENT;
     }
 
     if (!common::is_directory(dbpath)) {
         LOG_ERROR("Failed to init DB, path is not a directory: %s", dbpath);
-        return ReturnCode::GENERIC_ERROR;
+        return ResultCode::GENERIC_ERROR;
     }
 
     name_ = name;
@@ -49,13 +49,13 @@ ReturnCode Db::init(const char* name, const char* dbpath) {
     return open_all_tables();
 }
 
-ReturnCode Db::create_table(const char* table_name, int attribute_count,
+ResultCode Db::create_table(const char* table_name, int attribute_count,
                     const AttrInfo* attributes) {
-    ReturnCode rc = ReturnCode::SUCCESS;
+    ResultCode rc = ResultCode::SUCCESS;
     // check table_name
     if (opened_tables_.count(table_name) != 0) {
         LOG_WARN("%s has been opened before.", table_name);
-        return ReturnCode::SCHEMA_TABLE_EXIST;
+        return ResultCode::SCHEMA_TABLE_EXIST;
     }
 
     // 文件路径可以移到Table模块
@@ -63,7 +63,7 @@ ReturnCode Db::create_table(const char* table_name, int attribute_count,
     Table*      table           = new Table();
     rc = table->create(table_file_path.c_str(), table_name, path_.c_str(),
                        attribute_count, attributes);
-    if (rc != ReturnCode::SUCCESS) {
+    if (rc != ResultCode::SUCCESS) {
         LOG_ERROR("Failed to create table %s.", table_name);
         delete table;
         return rc;
@@ -71,10 +71,10 @@ ReturnCode Db::create_table(const char* table_name, int attribute_count,
 
     opened_tables_[table_name] = table;
     LOG_INFO("Create table success. table name=%s", table_name);
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
-ReturnCode Db::drop_table(const char* table_name) {
+ResultCode Db::drop_table(const char* table_name) {
     // TODO 从表list(opened_tables_)中找出表指针
 
     // TODO 找不到表，要返回错误
@@ -83,7 +83,7 @@ ReturnCode Db::drop_table(const char* table_name) {
 
     // TODO 删除成功的话，从表list中将它删除
 
-    return ReturnCode::GENERIC_ERROR;
+    return ResultCode::GENERIC_ERROR;
 }
 
 Table* Db::find_table(const char* table_name) const {
@@ -95,20 +95,20 @@ Table* Db::find_table(const char* table_name) const {
     return nullptr;
 }
 
-ReturnCode Db::open_all_tables() {
+ResultCode Db::open_all_tables() {
     std::vector<std::string> table_meta_files;
     int ret = common::list_file(path_.c_str(), TABLE_META_FILE_PATTERN,
                                 table_meta_files);
     if (ret < 0) {
         LOG_ERROR("Failed to list table meta files under %s.", path_.c_str());
-        return ReturnCode::IOERR;
+        return ResultCode::IOERR;
     }
 
-    ReturnCode rc = ReturnCode::SUCCESS;
+    ResultCode rc = ResultCode::SUCCESS;
     for (const std::string& filename : table_meta_files) {
         Table* table = new Table();
         rc           = table->open(filename.c_str(), path_.c_str());
-        if (rc != ReturnCode::SUCCESS) {
+        if (rc != ResultCode::SUCCESS) {
             delete table;
             LOG_ERROR("Failed to open table. filename=%s", filename.c_str());
             return rc;
@@ -119,7 +119,7 @@ ReturnCode Db::open_all_tables() {
             LOG_ERROR("Duplicate table with difference file name. table=%s, "
                       "the other filename=%s",
                       table->name(), filename.c_str());
-            return ReturnCode::GENERIC_ERROR;
+            return ResultCode::GENERIC_ERROR;
         }
 
         opened_tables_[table->name()] = table;
@@ -138,12 +138,12 @@ void        Db::all_tables(std::vector<std::string>& table_names) const {
     }
 }
 
-ReturnCode Db::sync() {
-    ReturnCode rc = ReturnCode::SUCCESS;
+ResultCode Db::sync() {
+    ResultCode rc = ResultCode::SUCCESS;
     for (const auto& table_pair : opened_tables_) {
         Table* table = table_pair.second;
         rc           = table->sync();
-        if (rc != ReturnCode::SUCCESS) {
+        if (rc != ResultCode::SUCCESS) {
             LOG_ERROR("Failed to flush table. table=%s.%s, rc=%d:%s",
                       name_.c_str(), table->name(), rc, strrc(rc));
             return rc;

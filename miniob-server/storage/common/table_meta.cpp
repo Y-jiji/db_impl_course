@@ -36,12 +36,12 @@ void TableMeta::swap(TableMeta& other) noexcept {
     std::swap(record_size_, other.record_size_);
 }
 
-ReturnCode TableMeta::init_sys_fields() {
+ResultCode TableMeta::init_sys_fields() {
     sys_fields_.reserve(1);
     FieldMeta field_meta;
-    ReturnCode rc = field_meta.init(Transaction::transaction_field_name(), Transaction::transaction_field_type(), 0,
+    ResultCode rc = field_meta.init(Transaction::transaction_field_name(), Transaction::transaction_field_type(), 0,
                             Transaction::transaction_field_len(), false);
-    if (rc != ReturnCode::SUCCESS) {
+    if (rc != ResultCode::SUCCESS) {
         LOG_ERROR("Failed to init transaction field. rc = %d:%s", rc, strrc(rc));
         return rc;
     }
@@ -49,23 +49,23 @@ ReturnCode TableMeta::init_sys_fields() {
     sys_fields_.push_back(field_meta);
     return rc;
 }
-ReturnCode TableMeta::init(const char* name, int field_num,
+ResultCode TableMeta::init(const char* name, int field_num,
                    const AttrInfo attributes[]) {
     if (common::is_blank(name)) {
         LOG_ERROR("Name cannot be empty");
-        return ReturnCode::INVALID_ARGUMENT;
+        return ResultCode::INVALID_ARGUMENT;
     }
 
     if (field_num <= 0 || nullptr == attributes) {
         LOG_ERROR("Invalid argument. name=%s, field_num=%d, attributes=%p",
                   name, field_num, attributes);
-        return ReturnCode::INVALID_ARGUMENT;
+        return ResultCode::INVALID_ARGUMENT;
     }
 
-    ReturnCode rc = ReturnCode::SUCCESS;
+    ResultCode rc = ResultCode::SUCCESS;
     if (sys_fields_.empty()) {
         rc = init_sys_fields();
-        if (rc != ReturnCode::SUCCESS) {
+        if (rc != ResultCode::SUCCESS) {
             LOG_ERROR("Failed to init_sys_fields, name:%s ", name);
             return rc;
         }
@@ -84,7 +84,7 @@ ReturnCode TableMeta::init(const char* name, int field_num,
         rc = fields_[i + sys_fields_.size()].init(attr_info.name,
                                                   attr_info.type, field_offset,
                                                   attr_info.length, true);
-        if (rc != ReturnCode::SUCCESS) {
+        if (rc != ResultCode::SUCCESS) {
             LOG_ERROR(
                 "Failed to init field meta. table name=%s, field name: %s",
                 name, attr_info.name);
@@ -98,12 +98,12 @@ ReturnCode TableMeta::init(const char* name, int field_num,
 
     name_        = name;
     LOG_INFO("Sussessfully initialized table meta. table name=%s", name);
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
-ReturnCode TableMeta::add_index(const IndexMeta& index) {
+ResultCode TableMeta::add_index(const IndexMeta& index) {
     indexes_.push_back(index);
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
 const char*      TableMeta::name() const { return name_.c_str(); }
@@ -223,7 +223,7 @@ int TableMeta::deserialize(std::istream& is) {
         return -1;
     }
 
-    ReturnCode                     rc        = ReturnCode::SUCCESS;
+    ResultCode                     rc        = ResultCode::SUCCESS;
     int                    field_num = fields_value.size();
     std::vector<FieldMeta> fields(field_num);
     for (int i = 0; i < field_num; i++) {
@@ -231,7 +231,7 @@ int TableMeta::deserialize(std::istream& is) {
 
         const Json::Value& field_value = fields_value[i];
         rc = FieldMeta::from_json(field_value, field);
-        if (rc != ReturnCode::SUCCESS) {
+        if (rc != ResultCode::SUCCESS) {
             LOG_ERROR("Failed to deserialize table meta. table name =%s",
                       table_name.c_str());
             return -1;
@@ -262,7 +262,7 @@ int TableMeta::deserialize(std::istream& is) {
 
             const Json::Value& index_value = indexes_value[i];
             rc = IndexMeta::from_json(*this, index_value, index);
-            if (rc != ReturnCode::SUCCESS) {
+            if (rc != ResultCode::SUCCESS) {
                 LOG_ERROR("Failed to deserialize table meta. table name=%s",
                           table_name.c_str());
                 return -1;

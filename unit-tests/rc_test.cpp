@@ -10,7 +10,7 @@ See the Mulan PSL v2 for more details. */
 //
 // Created by Longda on 2021/5/3.
 //
-#include <rc.h>
+#include <result_code.h>
 #include <iostream>
 
 int main(int argc, char** argv) {

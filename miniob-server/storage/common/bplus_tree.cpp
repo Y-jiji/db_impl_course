@@ -13,7 +13,7 @@ See the Mulan PSL v2 for more details. */
 //
 #include <storage/common/bplus_tree.h>
 #include <common/log/log.h>
-#include <rc.h>
+#include <result_code.h>
 #include <sql/parser/parse_defs.h>
 #include <storage/default/disk_buffer_pool.h>
 
@@ -87,15 +87,15 @@ IndexNode* BplusTreeHandler::get_index_node(char* page_data) const {
     return node;
 }
 
-ReturnCode BplusTreeHandler::sync() {
+ResultCode BplusTreeHandler::sync() {
     return disk_buffer_pool_->purge_all_pages(file_id_);
 }
 
-ReturnCode BplusTreeHandler::create(const char* file_name, AttrType attr_type,
+ResultCode BplusTreeHandler::create(const char* file_name, AttrType attr_type,
                             int attr_length) {
     DiskBufferPool* disk_buffer_pool = theGlobalDiskBufferPool();
-    ReturnCode              rc               = disk_buffer_pool->create_file(file_name);
-    if (rc != ReturnCode::SUCCESS) {
+    ResultCode              rc               = disk_buffer_pool->create_file(file_name);
+    if (rc != ResultCode::SUCCESS) {
         LOG_WARN("Failed to create file. file name=%s, rc=%d:%s", file_name, rc,
                  strrc(rc));
         return rc;
@@ -104,7 +104,7 @@ ReturnCode BplusTreeHandler::create(const char* file_name, AttrType attr_type,
 
     int file_id;
     rc = disk_buffer_pool->open_file(file_name, &file_id);
-    if (rc != ReturnCode::SUCCESS) {
+    if (rc != ResultCode::SUCCESS) {
         LOG_WARN("Failed to open file. file name=%s, rc=%d:%s", file_name, rc,
                  strrc(rc));
         return rc;
@@ -112,7 +112,7 @@ ReturnCode BplusTreeHandler::create(const char* file_name, AttrType attr_type,
     LOG_INFO("Successfully open index file %s.", file_name);
 
     rc = disk_buffer_pool->allocate_page(file_id, &root_page_handle_);
-    if (rc != ReturnCode::SUCCESS) {
+    if (rc != ResultCode::SUCCESS) {
         LOG_WARN("Failed to allocate page. file name=%s, rc=%d:%s", file_name,
                  rc, strrc(rc));
         disk_buffer_pool->close_file(file_id);
@@ -121,7 +121,7 @@ ReturnCode BplusTreeHandler::create(const char* file_name, AttrType attr_type,
 
     char* pdata;
     rc = disk_buffer_pool->get_data(&root_page_handle_, &pdata);
-    if (rc != ReturnCode::SUCCESS) {
+    if (rc != ResultCode::SUCCESS) {
         LOG_WARN("Failed to get data. file name=%s, rc=%d:%s", file_name, rc,
                  strrc(rc));
         disk_buffer_pool->close_file(file_id);
@@ -130,7 +130,7 @@ ReturnCode BplusTreeHandler::create(const char* file_name, AttrType attr_type,
 
     PageNum page_num;
     rc = disk_buffer_pool->get_page_num(&root_page_handle_, &page_num);
-    if (rc != ReturnCode::SUCCESS) {
+    if (rc != ResultCode::SUCCESS) {
         LOG_WARN("Failed to get page num. file name=%s, rc=%d:%s", file_name,
                  rc, strrc(rc));
         disk_buffer_pool->close_file(file_id);
@@ -159,23 +159,23 @@ ReturnCode BplusTreeHandler::create(const char* file_name, AttrType attr_type,
     if (mem_pool_item_->init(file_header->key_length) < 0) {
         LOG_WARN("Failed to init memory pool for index %s", file_name);
         close();
-        return ReturnCode::NOMEM;
+        return ResultCode::NOMEM;
     }
 
     LOG_INFO("Successfully create index %s", file_name);
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
-ReturnCode BplusTreeHandler::open(const char* file_name) {
+ResultCode BplusTreeHandler::open(const char* file_name) {
     if (file_id_ > 0) {
         LOG_WARN("%s has been opened before index.open.", file_name);
-        return ReturnCode::RECORD_OPENNED;
+        return ResultCode::RECORD_OPENNED;
     }
 
     DiskBufferPool* disk_buffer_pool = theGlobalDiskBufferPool();
     int             file_id          = 0;
-    ReturnCode              rc = disk_buffer_pool->open_file(file_name, &file_id);
-    if (rc != ReturnCode::SUCCESS) {
+    ResultCode              rc = disk_buffer_pool->open_file(file_name, &file_id);
+    if (rc != ResultCode::SUCCESS) {
         LOG_WARN("Failed to open file name=%s, rc=%d:%s", file_name, rc,
                  strrc(rc));
         return rc;
@@ -184,7 +184,7 @@ ReturnCode BplusTreeHandler::open(const char* file_name) {
     BPPageHandle page_handle;
     rc = disk_buffer_pool->get_this_page(file_id, FIRST_INDEX_PAGE,
                                          &page_handle);
-    if (rc != ReturnCode::SUCCESS) {
+    if (rc != ResultCode::SUCCESS) {
         LOG_WARN("Failed to get first page file name=%s, rc=%d:%s", file_name,
                  rc, strrc(rc));
         disk_buffer_pool_->close_file(file_id);
@@ -193,7 +193,7 @@ ReturnCode BplusTreeHandler::open(const char* file_name) {
 
     char* pdata;
     rc = disk_buffer_pool->get_data(&page_handle, &pdata);
-    if (rc != ReturnCode::SUCCESS) {
+    if (rc != ResultCode::SUCCESS) {
         LOG_WARN("Failed to get first page data. file name=%s, rc=%d:%s",
                  file_name, rc, strrc(rc));
         disk_buffer_pool_->close_file(file_id);
@@ -209,7 +209,7 @@ ReturnCode BplusTreeHandler::open(const char* file_name) {
     if (mem_pool_item_->init(file_header_.key_length) < 0) {
         LOG_WARN("Failed to init memory pool for index %s", file_name);
         close();
-        return ReturnCode::NOMEM;
+        return ResultCode::NOMEM;
     }
 
     if (file_header_.root_page == FIRST_INDEX_PAGE) {
@@ -217,7 +217,7 @@ ReturnCode BplusTreeHandler::open(const char* file_name) {
         root_page_handle_ = page_handle;
 
         LOG_INFO("Successfully open index %s", file_name);
-        return ReturnCode::SUCCESS;
+        return ResultCode::SUCCESS;
     }
 
     // close old page_handle
@@ -227,7 +227,7 @@ ReturnCode BplusTreeHandler::open(const char* file_name) {
              file_header_.root_page);
     rc = disk_buffer_pool->get_this_page(file_id, file_header_.root_page,
                                          &root_page_handle_);
-    if (rc != ReturnCode::SUCCESS) {
+    if (rc != ResultCode::SUCCESS) {
         LOG_WARN("Failed to get first page file name=%s, rc=%d:%s", file_name,
                  rc, strrc(rc));
         disk_buffer_pool_->close_file(file_id);
@@ -235,7 +235,7 @@ ReturnCode BplusTreeHandler::open(const char* file_name) {
     }
 
     rc = disk_buffer_pool->get_data(&root_page_handle_, &pdata);
-    if (rc != ReturnCode::SUCCESS) {
+    if (rc != ResultCode::SUCCESS) {
         LOG_WARN("Failed to get first page data. file name=%s, rc=%d:%s",
                  file_name, rc, strrc(rc));
         disk_buffer_pool_->close_file(file_id);
@@ -244,10 +244,10 @@ ReturnCode BplusTreeHandler::open(const char* file_name) {
     root_node_ = get_index_node(pdata);
 
     LOG_INFO("Successfully open index %s", file_name);
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
-ReturnCode BplusTreeHandler::close() {
+ResultCode BplusTreeHandler::close() {
     if (file_id_ != -1) {
         disk_buffer_pool_->unpin_page(&root_page_handle_);
         root_node_ = nullptr;
@@ -260,10 +260,10 @@ ReturnCode BplusTreeHandler::close() {
     }
 
     disk_buffer_pool_ = nullptr;
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
-ReturnCode BplusTreeHandler::print_node(IndexNode* node, PageNum page_num) {
+ResultCode BplusTreeHandler::print_node(IndexNode* node, PageNum page_num) {
     LOG_INFO("PageNum:%d, node {%s}\n", page_num,
              node->to_string(file_header_).c_str());
 
@@ -271,9 +271,9 @@ ReturnCode BplusTreeHandler::print_node(IndexNode* node, PageNum page_num) {
         for (int i = 0; i <= node->key_num; i++) {
             PageNum      child_page_num = node->rids[i].page_num;
             BPPageHandle page_handle;
-            ReturnCode rc = disk_buffer_pool_->get_this_page(file_id_, child_page_num,
+            ResultCode rc = disk_buffer_pool_->get_this_page(file_id_, child_page_num,
                                                      &page_handle);
-            if (rc != ReturnCode::SUCCESS) {
+            if (rc != ResultCode::SUCCESS) {
                 LOG_WARN("Failed to load page file_id:%d, page_num:%d",
                          file_id_, child_page_num);
                 continue;
@@ -287,18 +287,18 @@ ReturnCode BplusTreeHandler::print_node(IndexNode* node, PageNum page_num) {
         }
     }
 
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
-ReturnCode BplusTreeHandler::print_tree() {
+ResultCode BplusTreeHandler::print_tree() {
     if (file_id_ < 0) {
         LOG_WARN("Index hasn't been created or opened, fail to print");
-        return ReturnCode::SUCCESS;
+        return ResultCode::SUCCESS;
     }
 
     int page_count;
-    ReturnCode  rc = disk_buffer_pool_->get_page_count(file_id_, &page_count);
-    if (rc != ReturnCode::SUCCESS) {
+    ResultCode  rc = disk_buffer_pool_->get_page_count(file_id_, &page_count);
+    if (rc != ResultCode::SUCCESS) {
         LOG_WARN("Failed to get page count of index %d", file_id_);
         return rc;
     }
@@ -309,19 +309,19 @@ ReturnCode BplusTreeHandler::print_tree() {
              file_header_.to_string().c_str());
 
     print_node(root_node_, file_header_.root_page);
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
-ReturnCode BplusTreeHandler::print_leafs() {
+ResultCode BplusTreeHandler::print_leafs() {
     PageNum page_num;
     get_first_leaf_page(&page_num);
 
     IndexNode*   node;
     BPPageHandle page_handle;
-    ReturnCode           rc;
+    ResultCode           rc;
     while (page_num != -1) {
         rc = disk_buffer_pool_->get_this_page(file_id_, page_num, &page_handle);
-        if (rc != ReturnCode::SUCCESS) {
+        if (rc != ResultCode::SUCCESS) {
             LOG_WARN("Failed to print leafs, due to failed to load. ");
             return rc;
         }
@@ -334,7 +334,7 @@ ReturnCode BplusTreeHandler::print_leafs() {
         disk_buffer_pool_->unpin_page(&page_handle);
     }
 
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
 bool BplusTreeHandler::validate_node(IndexNode* node) {
@@ -368,9 +368,9 @@ bool BplusTreeHandler::validate_node(IndexNode* node) {
         PageNum parent_page = node->parent;
         while (parent_page != -1) {
             BPPageHandle parent_handle;
-            ReturnCode rc = disk_buffer_pool_->get_this_page(file_id_, parent_page,
+            ResultCode rc = disk_buffer_pool_->get_this_page(file_id_, parent_page,
                                                      &parent_handle);
-            if (rc != ReturnCode::SUCCESS) {
+            if (rc != ResultCode::SUCCESS) {
                 LOG_WARN("Failed to check parent's keys, file_id:%d", file_id_);
 
                 return false;
@@ -430,9 +430,9 @@ bool BplusTreeHandler::validate_node(IndexNode* node) {
 
         PageNum      child_page = node->rids[i].page_num;
         BPPageHandle child_handle;
-        ReturnCode           rc = disk_buffer_pool_->get_this_page(file_id_, child_page,
+        ResultCode           rc = disk_buffer_pool_->get_this_page(file_id_, child_page,
                                                            &child_handle);
-        if (rc != ReturnCode::SUCCESS) {
+        if (rc != ResultCode::SUCCESS) {
             LOG_WARN("Failed to validte node's child %d, file_id:%d, node:%s",
                      i, file_id_, node->to_string(file_header_).c_str());
             continue;
@@ -464,7 +464,7 @@ bool BplusTreeHandler::validate_node(IndexNode* node) {
         PageNum      next_child_page = node->rids[i + 1].page_num;
         rc = disk_buffer_pool_->get_this_page(file_id_, next_child_page,
                                               &next_child_handle);
-        if (rc != ReturnCode::SUCCESS) {
+        if (rc != ResultCode::SUCCESS) {
             LOG_WARN("Failed to validte node's child %d, file_id:%d, node:%s",
                      i, file_id_, node->to_string(file_header_).c_str());
             disk_buffer_pool_->unpin_page(&child_handle);
@@ -534,7 +534,7 @@ bool BplusTreeHandler::validate_leaf_link() {
     BPPageHandle first_leaf_handle;
     IndexNode*   first_leaf = root_node_;
     PageNum      first_page;
-    ReturnCode           rc;
+    ResultCode           rc;
 
     while (first_leaf->is_leaf == false) {
         if (first_leaf_handle.open) {
@@ -543,7 +543,7 @@ bool BplusTreeHandler::validate_leaf_link() {
         first_page = first_leaf->rids[0].page_num;
         rc         = disk_buffer_pool_->get_this_page(file_id_, first_page,
                                                       &first_leaf_handle);
-        if (rc != ReturnCode::SUCCESS) {
+        if (rc != ResultCode::SUCCESS) {
             return false;
         }
 
@@ -582,7 +582,7 @@ bool BplusTreeHandler::validate_leaf_link() {
         last_page = last_leaf->rids[last_leaf->key_num].page_num;
         rc        = disk_buffer_pool_->get_this_page(file_id_, last_page,
                                                      &last_leaf_handle);
-        if (rc != ReturnCode::SUCCESS) {
+        if (rc != ResultCode::SUCCESS) {
             disk_buffer_pool_->unpin_page(&first_leaf_handle);
             return false;
         }
@@ -624,7 +624,7 @@ bool BplusTreeHandler::validate_leaf_link() {
     while (next_page != -1) {
         rc =
             disk_buffer_pool_->get_this_page(file_id_, next_page, &next_handle);
-        if (rc != ReturnCode::SUCCESS) {
+        if (rc != ResultCode::SUCCESS) {
             LOG_WARN("Failed to check leaf link ");
             goto cleanup;
         }
@@ -698,7 +698,7 @@ bool BplusTreeHandler::validate_tree() {
     return true;
 }
 
-ReturnCode BplusTreeHandler::find_leaf(const char* pkey, PageNum* leaf_page) {
+ResultCode BplusTreeHandler::find_leaf(const char* pkey, PageNum* leaf_page) {
     BPPageHandle page_handle;
     IndexNode*   node = root_node_;
     while (false == node->is_leaf) {
@@ -716,9 +716,9 @@ ReturnCode BplusTreeHandler::find_leaf(const char* pkey, PageNum* leaf_page) {
             disk_buffer_pool_->unpin_page(&page_handle);
         }
 
-        ReturnCode rc = disk_buffer_pool_->get_this_page(
+        ResultCode rc = disk_buffer_pool_->get_this_page(
             file_id_, node->rids[i].page_num, &page_handle);
-        if (rc != ReturnCode::SUCCESS) {
+        if (rc != ResultCode::SUCCESS) {
             LOG_WARN("Failed to load page file_id:%d, page_num:%d", file_id_,
                      node->rids[i].page_num);
             return rc;
@@ -730,16 +730,16 @@ ReturnCode BplusTreeHandler::find_leaf(const char* pkey, PageNum* leaf_page) {
 
     if (page_handle.open == false) {
         *leaf_page = file_header_.root_page;
-        return ReturnCode::SUCCESS;
+        return ResultCode::SUCCESS;
     }
 
     disk_buffer_pool_->get_page_num(&page_handle, leaf_page);
     disk_buffer_pool_->unpin_page(&page_handle);
 
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
-ReturnCode BplusTreeHandler::insert_entry_into_node(IndexNode* node, const char* pkey,
+ResultCode BplusTreeHandler::insert_entry_into_node(IndexNode* node, const char* pkey,
                                             const RID* rid, PageNum left_page) {
     int insert_pos = 0, tmp;
 
@@ -750,7 +750,7 @@ ReturnCode BplusTreeHandler::insert_entry_into_node(IndexNode* node, const char*
         if (tmp == 0) {
             LOG_TRACE("Insert into %d occur duplicated key, rid:%s.", file_id_,
                       node->rids[insert_pos].to_string().c_str());
-            return ReturnCode::RECORD_DUPLICATE_KEY;
+            return ResultCode::RECORD_DUPLICATE_KEY;
         }
         if (tmp < 0)
             break;
@@ -777,16 +777,16 @@ ReturnCode BplusTreeHandler::insert_entry_into_node(IndexNode* node, const char*
     }
 
     node->key_num++; // 叶子结点增加一条记录
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
-ReturnCode BplusTreeHandler::split_leaf(BPPageHandle& leaf_page_handle) {
+ResultCode BplusTreeHandler::split_leaf(BPPageHandle& leaf_page_handle) {
     PageNum leaf_page;
     disk_buffer_pool_->get_page_num(&leaf_page_handle, &leaf_page);
 
     char* pdata;
-    ReturnCode    rc = disk_buffer_pool_->get_data(&leaf_page_handle, &pdata);
-    if (rc != ReturnCode::SUCCESS) {
+    ResultCode    rc = disk_buffer_pool_->get_data(&leaf_page_handle, &pdata);
+    if (rc != ResultCode::SUCCESS) {
         return rc;
     }
     IndexNode* old_node       = get_index_node(pdata);
@@ -795,13 +795,13 @@ ReturnCode BplusTreeHandler::split_leaf(BPPageHandle& leaf_page_handle) {
     if (new_parent_key == nullptr) {
         LOG_WARN("Failed to alloc memory for new key. size=%d",
                  file_header_.key_length);
-        return ReturnCode::NOMEM;
+        return ResultCode::NOMEM;
     }
 
     // add a new node
     BPPageHandle page_handle2;
     rc = disk_buffer_pool_->allocate_page(file_id_, &page_handle2);
-    if (rc != ReturnCode::SUCCESS) {
+    if (rc != ResultCode::SUCCESS) {
         LOG_WARN("Failed to split index page due to failed to allocate page, "
                  "file_id:%d ",
                  file_id_);
@@ -825,7 +825,7 @@ ReturnCode BplusTreeHandler::split_leaf(BPPageHandle& leaf_page_handle) {
     PageNum parent_page = old_node->parent;
     rc = insert_into_parent(parent_page, leaf_page_handle, new_parent_key,
                             page_handle2);
-    if (rc != ReturnCode::SUCCESS) {
+    if (rc != ResultCode::SUCCESS) {
         LOG_WARN("Failed to insert into parent of index %d", file_id_);
         // restore status before insert into parent
         // merge_nodes function will move left node into right node
@@ -840,10 +840,10 @@ ReturnCode BplusTreeHandler::split_leaf(BPPageHandle& leaf_page_handle) {
     }
     mem_pool_item_->free(new_parent_key);
     disk_buffer_pool_->unpin_page(&page_handle2);
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
-ReturnCode BplusTreeHandler::insert_intern_node(BPPageHandle& parent_page_handle,
+ResultCode BplusTreeHandler::insert_intern_node(BPPageHandle& parent_page_handle,
                                         BPPageHandle& left_page_handle,
                                         BPPageHandle& right_page_handle,
                                         const char*   pkey) {
@@ -854,8 +854,8 @@ ReturnCode BplusTreeHandler::insert_intern_node(BPPageHandle& parent_page_handle
     disk_buffer_pool_->get_page_num(&right_page_handle, &right_page);
 
     char* pdata;
-    ReturnCode    rc = disk_buffer_pool_->get_data(&parent_page_handle, &pdata);
-    if (rc != ReturnCode::SUCCESS) {
+    ResultCode    rc = disk_buffer_pool_->get_data(&parent_page_handle, &pdata);
+    if (rc != ResultCode::SUCCESS) {
         return rc;
     }
 
@@ -869,17 +869,17 @@ ReturnCode BplusTreeHandler::insert_intern_node(BPPageHandle& parent_page_handle
 
     disk_buffer_pool_->mark_dirty(&parent_page_handle);
 
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
-ReturnCode BplusTreeHandler::split_intern_node(BPPageHandle& inter_page_handle,
+ResultCode BplusTreeHandler::split_intern_node(BPPageHandle& inter_page_handle,
                                        const char*   pkey) {
     PageNum inter_page_num;
     disk_buffer_pool_->get_page_num(&inter_page_handle, &inter_page_num);
 
     char* pdata;
-    ReturnCode    rc = disk_buffer_pool_->get_data(&inter_page_handle, &pdata);
-    if (rc != ReturnCode::SUCCESS) {
+    ResultCode    rc = disk_buffer_pool_->get_data(&inter_page_handle, &pdata);
+    if (rc != ResultCode::SUCCESS) {
         return rc;
     }
 
@@ -890,13 +890,13 @@ ReturnCode BplusTreeHandler::split_intern_node(BPPageHandle& inter_page_handle,
         LOG_WARN("Failed to alloc memory for new key when split intern node "
                  "index %d",
                  file_id_);
-        return ReturnCode::NOMEM;
+        return ResultCode::NOMEM;
     }
 
     // add a new node
     BPPageHandle new_page_handle;
     rc = disk_buffer_pool_->allocate_page(file_id_, &new_page_handle);
-    if (rc != ReturnCode::SUCCESS) {
+    if (rc != ResultCode::SUCCESS) {
         LOG_WARN("Faild to alloc new page when split inter node of index, "
                  "file_id:%d",
                  file_id_);
@@ -922,7 +922,7 @@ ReturnCode BplusTreeHandler::split_intern_node(BPPageHandle& inter_page_handle,
     PageNum parent_page = inter_node->parent;
     rc = insert_into_parent(parent_page, inter_page_handle, new_parent_key,
                             new_page_handle);
-    if (rc != ReturnCode::SUCCESS) {
+    if (rc != ResultCode::SUCCESS) {
         LOG_WARN("Failed to insert key to parents, file_id:%d", file_id_);
         merge_nodes(inter_node, new_node, new_page, new_parent_key);
         copy_node(inter_node, new_node);
@@ -940,7 +940,7 @@ ReturnCode BplusTreeHandler::split_intern_node(BPPageHandle& inter_page_handle,
     return rc;
 }
 
-ReturnCode BplusTreeHandler::insert_into_parent(PageNum       parent_page,
+ResultCode BplusTreeHandler::insert_into_parent(PageNum       parent_page,
                                         BPPageHandle& left_page_handle,
                                         const char*   pkey,
                                         BPPageHandle& right_page_handle) {
@@ -949,9 +949,9 @@ ReturnCode BplusTreeHandler::insert_into_parent(PageNum       parent_page,
     }
 
     BPPageHandle page_handle;
-    ReturnCode           rc =
+    ResultCode           rc =
         disk_buffer_pool_->get_this_page(file_id_, parent_page, &page_handle);
-    if (rc != ReturnCode::SUCCESS) {
+    if (rc != ResultCode::SUCCESS) {
         LOG_WARN("Failed to get parent page file_id:%d, page:%d", file_id_,
                  parent_page);
         return rc;
@@ -963,13 +963,13 @@ ReturnCode BplusTreeHandler::insert_into_parent(PageNum       parent_page,
 
     rc = insert_intern_node(page_handle, left_page_handle, right_page_handle,
                             pkey);
-    if (rc != ReturnCode::SUCCESS) {
+    if (rc != ResultCode::SUCCESS) {
         LOG_WARN("Failed to insert intern node of index :%d", file_id_);
         return rc;
     }
     if (node->key_num > file_header_.order) {
         rc = split_intern_node(page_handle, pkey);
-        if (rc != ReturnCode::SUCCESS) {
+        if (rc != ResultCode::SUCCESS) {
             LOG_WARN("Failed to split intern node of index %d", file_id_);
             int delete_index;
             delete_entry_from_node(node, pkey, delete_index);
@@ -998,12 +998,12 @@ void BplusTreeHandler::swith_root(BPPageHandle& new_root_page_handle,
  * @param right_page_handle
  * @return
  */
-ReturnCode BplusTreeHandler::insert_into_new_root(BPPageHandle& left_page_handle,
+ResultCode BplusTreeHandler::insert_into_new_root(BPPageHandle& left_page_handle,
                                           const char*   pkey,
                                           BPPageHandle& right_page_handle) {
     BPPageHandle new_root_page_handle;
-    ReturnCode rc = disk_buffer_pool_->allocate_page(file_id_, &new_root_page_handle);
-    if (rc != ReturnCode::SUCCESS) {
+    ResultCode rc = disk_buffer_pool_->allocate_page(file_id_, &new_root_page_handle);
+    if (rc != ResultCode::SUCCESS) {
         LOG_WARN("Failed to alloc new page for the new root node of index, "
                  "file_id:%d",
                  file_id_);
@@ -1049,32 +1049,32 @@ ReturnCode BplusTreeHandler::insert_into_new_root(BPPageHandle& left_page_handle
     disk_buffer_pool_->mark_dirty(&new_root_page_handle);
     swith_root(new_root_page_handle, root, root_page);
 
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
-ReturnCode BplusTreeHandler::insert_entry(const char* pkey, const RID* rid) {
+ResultCode BplusTreeHandler::insert_entry(const char* pkey, const RID* rid) {
 
     if (file_id_ < 0) {
         LOG_WARN("Index isn't ready!");
-        return ReturnCode::RECORD_CLOSED;
+        return ResultCode::RECORD_CLOSED;
     }
 
     if (pkey == nullptr || rid == nullptr) {
         LOG_WARN("Invalid arguments, key is empty or rid is empty");
-        return ReturnCode::INVALID_ARGUMENT;
+        return ResultCode::INVALID_ARGUMENT;
     }
 
     char* key = (char*)mem_pool_item_->alloc();
     if (key == nullptr) {
         LOG_WARN("Failed to alloc memory for key. file_id:%d", file_id_);
-        return ReturnCode::NOMEM;
+        return ResultCode::NOMEM;
     }
     memcpy(key, pkey, file_header_.attr_length);
     memcpy(key + file_header_.attr_length, rid, sizeof(*rid));
 
     PageNum leaf_page;
-    ReturnCode      rc = find_leaf(key, &leaf_page);
-    if (rc != ReturnCode::SUCCESS) {
+    ResultCode      rc = find_leaf(key, &leaf_page);
+    if (rc != ResultCode::SUCCESS) {
         LOG_WARN("Failed to find leaf file_id:%d, %s", file_id_,
                  rid->to_string().c_str());
         mem_pool_item_->free(key);
@@ -1083,7 +1083,7 @@ ReturnCode BplusTreeHandler::insert_entry(const char* pkey, const RID* rid) {
 
     BPPageHandle page_handle;
     rc = disk_buffer_pool_->get_this_page(file_id_, leaf_page, &page_handle);
-    if (rc != ReturnCode::SUCCESS) {
+    if (rc != ResultCode::SUCCESS) {
         LOG_WARN("Failed to load leaf file_id:%d, page_num:%d", file_id_,
                  leaf_page);
         mem_pool_item_->free(key);
@@ -1095,7 +1095,7 @@ ReturnCode BplusTreeHandler::insert_entry(const char* pkey, const RID* rid) {
 
     IndexNode* leaf = get_index_node(pdata);
     rc              = insert_entry_into_node(leaf, key, rid, leaf_page);
-    if (rc != ReturnCode::SUCCESS) {
+    if (rc != ResultCode::SUCCESS) {
         LOG_TRACE("Failed to insert into leaf of index %d, rid:%s", file_id_,
                   rid->to_string().c_str());
         disk_buffer_pool_->unpin_page(&page_handle);
@@ -1107,7 +1107,7 @@ ReturnCode BplusTreeHandler::insert_entry(const char* pkey, const RID* rid) {
     if (leaf->key_num > file_header_.order) {
 
         rc = split_leaf(page_handle);
-        if (rc != ReturnCode::SUCCESS) {
+        if (rc != ResultCode::SUCCESS) {
             LOG_WARN("Failed to insert index of %d, failed to split for rid:%s",
                      file_id_, rid->to_string().c_str());
             int delete_index = 0;
@@ -1121,7 +1121,7 @@ ReturnCode BplusTreeHandler::insert_entry(const char* pkey, const RID* rid) {
 
     disk_buffer_pool_->unpin_page(&page_handle);
     mem_pool_item_->free(key);
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
 void BplusTreeHandler::get_entry_from_leaf(IndexNode* node, const char* pkey,
@@ -1150,21 +1150,21 @@ void BplusTreeHandler::get_entry_from_leaf(IndexNode* node, const char* pkey,
     }
 }
 
-ReturnCode BplusTreeHandler::get_entry(const char* pkey, std::list<RID>& rids) {
+ResultCode BplusTreeHandler::get_entry(const char* pkey, std::list<RID>& rids) {
     if (file_id_ < 0) {
         LOG_WARN("Index isn't ready!");
-        return ReturnCode::RECORD_CLOSED;
+        return ResultCode::RECORD_CLOSED;
     }
 
     char* key = (char*)mem_pool_item_->alloc();
     if (key == nullptr) {
         LOG_WARN("Failed to alloc memory for key. size=%d",
                  file_header_.key_length);
-        return ReturnCode::NOMEM;
+        return ResultCode::NOMEM;
     }
     memcpy(key, pkey, file_header_.attr_length);
 
-    ReturnCode           rc;
+    ResultCode           rc;
 
     BPPageHandle page_handle;
     char*        pdata;
@@ -1186,7 +1186,7 @@ ReturnCode BplusTreeHandler::get_entry(const char* pkey, std::list<RID>& rids) {
 
         rc = disk_buffer_pool_->get_this_page(file_id_, node->rids[i].page_num,
                                               &page_handle);
-        if (rc != ReturnCode::SUCCESS) {
+        if (rc != ResultCode::SUCCESS) {
             LOG_WARN("Failed to load page file_id:%d, page_num:%d", file_id_,
                      node->rids[i].page_num);
             return rc;
@@ -1210,7 +1210,7 @@ ReturnCode BplusTreeHandler::get_entry(const char* pkey, std::list<RID>& rids) {
 
         rc = disk_buffer_pool_->get_this_page(file_id_, prev_brother,
                                               &page_handle);
-        if (rc != ReturnCode::SUCCESS) {
+        if (rc != ResultCode::SUCCESS) {
             LOG_WARN("Skip load the previous page, file_id:%d", file_id_);
             break;
         }
@@ -1224,7 +1224,7 @@ ReturnCode BplusTreeHandler::get_entry(const char* pkey, std::list<RID>& rids) {
         disk_buffer_pool_->unpin_page(&page_handle);
     }
     mem_pool_item_->free(key);
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
 void BplusTreeHandler::delete_entry_from_node(IndexNode* node,
@@ -1245,13 +1245,13 @@ void BplusTreeHandler::delete_entry_from_node(IndexNode* node,
     node->key_num--;
 }
 
-ReturnCode BplusTreeHandler::get_parent_changed_index(BPPageHandle& parent_handle,
+ResultCode BplusTreeHandler::get_parent_changed_index(BPPageHandle& parent_handle,
                                               IndexNode*&   parent,
                                               IndexNode* node, PageNum page_num,
                                               int& changed_index) {
-    ReturnCode rc = disk_buffer_pool_->get_this_page(file_id_, node->parent,
+    ResultCode rc = disk_buffer_pool_->get_this_page(file_id_, node->parent,
                                              &parent_handle);
-    if (rc != ReturnCode::SUCCESS) {
+    if (rc != ResultCode::SUCCESS) {
         LOG_WARN("Failed to delete index, due to failed to get pareent page, "
                  "file_id:%d, parent_page:%d",
                  file_id_, node->parent);
@@ -1272,42 +1272,42 @@ ReturnCode BplusTreeHandler::get_parent_changed_index(BPPageHandle& parent_handl
                  "parent, node:%s file_id:%d",
                  page_num, node->to_string(file_header_).c_str(), file_id_);
         print_tree();
-        return ReturnCode::RECORD_CLOSED;
+        return ResultCode::RECORD_CLOSED;
     }
 
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
-ReturnCode BplusTreeHandler::change_leaf_parent_key_insert(IndexNode* node,
+ResultCode BplusTreeHandler::change_leaf_parent_key_insert(IndexNode* node,
                                                    int        changed_indx,
                                                    PageNum    page_num) {
     if (changed_indx != 0) {
-        return ReturnCode::SUCCESS;
+        return ResultCode::SUCCESS;
     }
 
     if (node->is_leaf == false) {
-        return ReturnCode::SUCCESS;
+        return ResultCode::SUCCESS;
     }
 
     if (node->parent == -1) {
-        return ReturnCode::SUCCESS;
+        return ResultCode::SUCCESS;
     }
 
     if (node->key_num == 0) {
-        return ReturnCode::SUCCESS;
+        return ResultCode::SUCCESS;
     }
 
     if (node->prev_brother == -1) {
-        return ReturnCode::SUCCESS;
+        return ResultCode::SUCCESS;
     }
 
     int          parent_changed_index = 0;
     BPPageHandle parent_handle;
     IndexNode*   parent = nullptr;
 
-    ReturnCode rc = get_parent_changed_index(parent_handle, parent, node, page_num,
+    ResultCode rc = get_parent_changed_index(parent_handle, parent, node, page_num,
                                      parent_changed_index);
-    if (rc != ReturnCode::SUCCESS) {
+    if (rc != ResultCode::SUCCESS) {
         LOG_WARN("Failed to get parent's delete index, file_id:%d, child's "
                  "page_num:%d",
                  file_id_, page_num);
@@ -1323,29 +1323,29 @@ ReturnCode BplusTreeHandler::change_leaf_parent_key_insert(IndexNode* node,
     }
 
     disk_buffer_pool_->unpin_page(&parent_handle);
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
-ReturnCode BplusTreeHandler::change_leaf_parent_key_delete(IndexNode*  leaf,
+ResultCode BplusTreeHandler::change_leaf_parent_key_delete(IndexNode*  leaf,
                                                    int         delete_indx,
                                                    const char* old_first_key) {
     if (delete_indx != 0) {
-        return ReturnCode::SUCCESS;
+        return ResultCode::SUCCESS;
     }
 
     if (leaf->is_leaf == false) {
-        return ReturnCode::SUCCESS;
+        return ResultCode::SUCCESS;
     }
 
     if (leaf->parent == -1) {
-        return ReturnCode::SUCCESS;
+        return ResultCode::SUCCESS;
     }
 
     if (leaf->prev_brother == -1) {
-        return ReturnCode::SUCCESS;
+        return ResultCode::SUCCESS;
     }
 
     if (leaf->key_num == 0) {
-        return ReturnCode::SUCCESS;
+        return ResultCode::SUCCESS;
     }
 
     IndexNode* node  = leaf;
@@ -1354,9 +1354,9 @@ ReturnCode BplusTreeHandler::change_leaf_parent_key_delete(IndexNode*  leaf,
         int          index = 0;
         BPPageHandle parent_handle;
 
-        ReturnCode rc = disk_buffer_pool_->get_this_page(file_id_, node->parent,
+        ResultCode rc = disk_buffer_pool_->get_this_page(file_id_, node->parent,
                                                  &parent_handle);
-        if (rc != ReturnCode::SUCCESS) {
+        if (rc != ResultCode::SUCCESS) {
             LOG_WARN("Failed to delete index, due to failed to get pareent "
                      "page, file_id:%d, parent_page:%d",
                      file_id_, node->parent);
@@ -1387,7 +1387,7 @@ ReturnCode BplusTreeHandler::change_leaf_parent_key_delete(IndexNode*  leaf,
         disk_buffer_pool_->unpin_page(&parent_handle);
 
         if (found == true) {
-            return ReturnCode::SUCCESS;
+            return ResultCode::SUCCESS;
         }
     }
 
@@ -1396,9 +1396,9 @@ ReturnCode BplusTreeHandler::change_leaf_parent_key_delete(IndexNode*  leaf,
                  leaf->to_string(file_header_).c_str());
         print_tree();
     }
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
-ReturnCode BplusTreeHandler::delete_entry_from_node(IndexNode* node, const char* pkey,
+ResultCode BplusTreeHandler::delete_entry_from_node(IndexNode* node, const char* pkey,
                                             int& node_delete_index) {
 
     int delete_index, tmp;
@@ -1413,28 +1413,28 @@ ReturnCode BplusTreeHandler::delete_entry_from_node(IndexNode* node, const char*
     }
     if (delete_index >= node->key_num) {
         // LOG_WARN("Failed to delete index of %d", file_id_);
-        return ReturnCode::RECORD_INVALID_KEY;
+        return ResultCode::RECORD_INVALID_KEY;
     }
 
     delete_entry_from_node(node, delete_index);
 
     // change parent's key
     change_leaf_parent_key_delete(node, delete_index, pkey);
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
-ReturnCode BplusTreeHandler::change_insert_leaf_link(IndexNode* left, IndexNode* right,
+ResultCode BplusTreeHandler::change_insert_leaf_link(IndexNode* left, IndexNode* right,
                                              PageNum right_page) {
     if (left->is_leaf == false) {
-        return ReturnCode::SUCCESS;
+        return ResultCode::SUCCESS;
     }
 
     if (right->next_brother != -1) {
         PageNum      next_right_page = right->next_brother;
         BPPageHandle next_right_handle;
-        ReturnCode rc = disk_buffer_pool_->get_this_page(file_id_, next_right_page,
+        ResultCode rc = disk_buffer_pool_->get_this_page(file_id_, next_right_page,
                                                  &next_right_handle);
-        if (rc != ReturnCode::SUCCESS) {
+        if (rc != ResultCode::SUCCESS) {
             LOG_WARN("Failed to set link for leaf for node %s, file_id:%d",
                      file_id_, right->to_string(file_header_).c_str());
             return rc;
@@ -1448,22 +1448,22 @@ ReturnCode BplusTreeHandler::change_insert_leaf_link(IndexNode* left, IndexNode*
         disk_buffer_pool_->unpin_page(&next_right_handle);
     }
 
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
-ReturnCode BplusTreeHandler::change_delete_leaf_link(IndexNode* left, IndexNode* right,
+ResultCode BplusTreeHandler::change_delete_leaf_link(IndexNode* left, IndexNode* right,
                                              PageNum right_page) {
     if (left->is_leaf == false) {
-        return ReturnCode::SUCCESS;
+        return ResultCode::SUCCESS;
     }
 
     right->prev_brother = left->prev_brother;
     if (left->prev_brother != -1) {
         PageNum      prev_left_page = left->prev_brother;
         BPPageHandle prev_left_handle;
-        ReturnCode rc = disk_buffer_pool_->get_this_page(file_id_, prev_left_page,
+        ResultCode rc = disk_buffer_pool_->get_this_page(file_id_, prev_left_page,
                                                  &prev_left_handle);
-        if (rc != ReturnCode::SUCCESS) {
+        if (rc != ResultCode::SUCCESS) {
             LOG_WARN("Failed to set link for leaf for node %s, file_id:%d",
                      file_id_, right->to_string(file_header_).c_str());
             return rc;
@@ -1477,7 +1477,7 @@ ReturnCode BplusTreeHandler::change_delete_leaf_link(IndexNode* left, IndexNode*
         disk_buffer_pool_->unpin_page(&prev_left_handle);
     }
 
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
 /**
@@ -1488,7 +1488,7 @@ ReturnCode BplusTreeHandler::change_delete_leaf_link(IndexNode* left, IndexNode*
  * @param delete_index
  * @return
  */
-ReturnCode BplusTreeHandler::coalesce_node(BPPageHandle& parent_handle,
+ResultCode BplusTreeHandler::coalesce_node(BPPageHandle& parent_handle,
                                    BPPageHandle& left_handle,
                                    BPPageHandle& right_handle, int delete_index,
                                    bool check_change_leaf_key,
@@ -1496,7 +1496,7 @@ ReturnCode BplusTreeHandler::coalesce_node(BPPageHandle& parent_handle,
     PageNum    left_page, right_page, parent_page;
     IndexNode *left, *right, *parent;
     char *     pdata, *parent_key;
-    ReturnCode         rc;
+    ResultCode         rc;
 
     disk_buffer_pool_->get_page_num(&left_handle, &left_page);
     disk_buffer_pool_->get_data(&left_handle, &pdata);
@@ -1514,7 +1514,7 @@ ReturnCode BplusTreeHandler::coalesce_node(BPPageHandle& parent_handle,
     if (parent_key == nullptr) {
         LOG_WARN("Failed to alloc memory for key. size=%d",
                  file_header_.key_length);
-        return ReturnCode::NOMEM;
+        return ResultCode::NOMEM;
     }
 
     memcpy(parent_key, parent->keys + delete_index * file_header_.key_length,
@@ -1529,7 +1529,7 @@ ReturnCode BplusTreeHandler::coalesce_node(BPPageHandle& parent_handle,
     }
 
     rc = delete_entry_internal(parent_page, parent_key);
-    if (rc != ReturnCode::SUCCESS) {
+    if (rc != ResultCode::SUCCESS) {
         LOG_WARN("Failed to delete internal entry of index ", file_id_);
 
         // restore status
@@ -1545,7 +1545,7 @@ ReturnCode BplusTreeHandler::coalesce_node(BPPageHandle& parent_handle,
     }
 
     mem_pool_item_->free(parent_key);
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
 void BplusTreeHandler::change_children_parent(RID* rids, int rid_len,
@@ -1556,9 +1556,9 @@ void BplusTreeHandler::change_children_parent(RID* rids, int rid_len,
         PageNum      page_num = rid.page_num;
 
         BPPageHandle child_page_handle;
-        ReturnCode           rc = disk_buffer_pool_->get_this_page(file_id_, page_num,
+        ResultCode           rc = disk_buffer_pool_->get_this_page(file_id_, page_num,
                                                            &child_page_handle);
-        if (rc != ReturnCode::SUCCESS) {
+        if (rc != ResultCode::SUCCESS) {
             LOG_WARN("Failed to load child page %d of index %d when change "
                      "child's parent.",
                      file_id_, page_num);
@@ -1871,7 +1871,7 @@ void BplusTreeHandler::redistribute_nodes(IndexNode* left_node,
     return;
 }
 
-ReturnCode BplusTreeHandler::redistribute_nodes(BPPageHandle& parent_handle,
+ResultCode BplusTreeHandler::redistribute_nodes(BPPageHandle& parent_handle,
                                         BPPageHandle& left_handle,
                                         BPPageHandle& right_handle) {
 
@@ -1901,7 +1901,7 @@ ReturnCode BplusTreeHandler::redistribute_nodes(BPPageHandle& parent_handle,
 
     if (parent_change_pos == -1) {
         LOG_WARN("Failed to find the parent pos during redistribute node");
-        return ReturnCode::RECORD_INVALID_KEY;
+        return ResultCode::RECORD_INVALID_KEY;
     }
 
     char* parent_key =
@@ -1912,18 +1912,18 @@ ReturnCode BplusTreeHandler::redistribute_nodes(BPPageHandle& parent_handle,
     disk_buffer_pool_->mark_dirty(&right_handle);
     disk_buffer_pool_->mark_dirty(&parent_handle);
 
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
-ReturnCode BplusTreeHandler::clean_root_after_delete(IndexNode* old_root) {
+ResultCode BplusTreeHandler::clean_root_after_delete(IndexNode* old_root) {
     if (old_root->key_num > 0) {
-        return ReturnCode::SUCCESS;
+        return ResultCode::SUCCESS;
     }
 
     BPPageHandle root_handle;
-    ReturnCode           rc = disk_buffer_pool_->get_this_page(
+    ResultCode           rc = disk_buffer_pool_->get_this_page(
         file_id_, old_root->rids[0].page_num, &root_handle);
-    if (rc != ReturnCode::SUCCESS) {
+    if (rc != ResultCode::SUCCESS) {
         LOG_WARN("Failed to get new root page %d of index %d",
                  old_root->rids[0].page_num, file_id_);
         return rc;
@@ -1936,13 +1936,13 @@ ReturnCode BplusTreeHandler::clean_root_after_delete(IndexNode* old_root) {
     disk_buffer_pool_->mark_dirty(&root_handle);
     swith_root(root_handle, root, old_root->rids[0].page_num);
 
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
-ReturnCode BplusTreeHandler::can_merge_with_other(BPPageHandle* page_handle,
+ResultCode BplusTreeHandler::can_merge_with_other(BPPageHandle* page_handle,
                                           PageNum page_num, bool* can_merge) {
-    ReturnCode rc = disk_buffer_pool_->get_this_page(file_id_, page_num, page_handle);
-    if (rc != ReturnCode::SUCCESS) {
+    ResultCode rc = disk_buffer_pool_->get_this_page(file_id_, page_num, page_handle);
+    if (rc != ResultCode::SUCCESS) {
         LOG_WARN("Failed to delete index, due to failed to get page of current "
                  "delete page, file_id:%d, page:%d",
                  file_id_, page_num);
@@ -1953,13 +1953,13 @@ ReturnCode BplusTreeHandler::can_merge_with_other(BPPageHandle* page_handle,
     IndexNode* node = get_index_node(pdata);
     *can_merge      = node->key_num > (file_header_.order / 2);
 
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
-ReturnCode BplusTreeHandler::delete_entry_internal(PageNum page_num, const char* pkey) {
+ResultCode BplusTreeHandler::delete_entry_internal(PageNum page_num, const char* pkey) {
     BPPageHandle page_handle;
-    ReturnCode rc = disk_buffer_pool_->get_this_page(file_id_, page_num, &page_handle);
-    if (rc != ReturnCode::SUCCESS) {
+    ResultCode rc = disk_buffer_pool_->get_this_page(file_id_, page_num, &page_handle);
+    if (rc != ResultCode::SUCCESS) {
         LOG_WARN("Failed to delete entry in index node, due to failed to get "
                  "page!, file_id:%d, page:%d",
                  file_id_, page_num);
@@ -1968,14 +1968,14 @@ ReturnCode BplusTreeHandler::delete_entry_internal(PageNum page_num, const char*
 
     char* pdata;
     rc = disk_buffer_pool_->get_data(&page_handle, &pdata);
-    if (rc != ReturnCode::SUCCESS) {
+    if (rc != ResultCode::SUCCESS) {
         return rc;
     }
     IndexNode* node              = get_index_node(pdata);
 
     int        node_delete_index = -1;
     rc = delete_entry_from_node(node, pkey, node_delete_index);
-    if (rc != ReturnCode::SUCCESS) {
+    if (rc != ResultCode::SUCCESS) {
         LOG_WARN("Failed to delete index %d", file_id_);
         return rc;
     }
@@ -1985,13 +1985,13 @@ ReturnCode BplusTreeHandler::delete_entry_internal(PageNum page_num, const char*
     int min_key = file_header_.order / 2;
     if (node->key_num >= min_key) {
         disk_buffer_pool_->unpin_page(&page_handle);
-        return ReturnCode::SUCCESS;
+        return ResultCode::SUCCESS;
     }
 
     if (node->parent == -1) {
         if (node->key_num == 0 && node->is_leaf == false) {
             rc = clean_root_after_delete(node);
-            if (rc != ReturnCode::SUCCESS) {
+            if (rc != ResultCode::SUCCESS) {
                 LOG_WARN("Failed to clean root after delete all entry in the "
                          "root, file_id:%d",
                          file_id_);
@@ -2004,11 +2004,11 @@ ReturnCode BplusTreeHandler::delete_entry_internal(PageNum page_num, const char*
             disk_buffer_pool_->unpin_page(&page_handle);
             disk_buffer_pool_->dispose_page(file_id_, page_num);
 
-            return ReturnCode::SUCCESS;
+            return ResultCode::SUCCESS;
         }
 
         disk_buffer_pool_->unpin_page(&page_handle);
-        return ReturnCode::SUCCESS;
+        return ResultCode::SUCCESS;
     }
 
     int          delete_index = 0;
@@ -2017,7 +2017,7 @@ ReturnCode BplusTreeHandler::delete_entry_internal(PageNum page_num, const char*
 
     rc = get_parent_changed_index(parent_handle, parent, node, page_num,
                                   delete_index);
-    if (rc != ReturnCode::SUCCESS) {
+    if (rc != ResultCode::SUCCESS) {
         LOG_WARN("Failed to get parent delete index");
         insert_entry_into_node(
             node, pkey, (RID*)(pkey + file_header_.attr_length), page_num);
@@ -2035,7 +2035,7 @@ ReturnCode BplusTreeHandler::delete_entry_internal(PageNum page_num, const char*
         right_page = parent->rids[delete_index + 1].page_num;
         rc         = can_merge_with_other(&right_handle, right_page,
                                           &can_merge_with_right);
-        if (rc != ReturnCode::SUCCESS) {
+        if (rc != ResultCode::SUCCESS) {
             goto cleanup;
         }
 
@@ -2046,7 +2046,7 @@ ReturnCode BplusTreeHandler::delete_entry_internal(PageNum page_num, const char*
         left_page = parent->rids[delete_index - 1].page_num;
         rc =
             can_merge_with_other(&left_handle, left_page, &can_merge_with_left);
-        if (rc != ReturnCode::SUCCESS) {
+        if (rc != ResultCode::SUCCESS) {
             LOG_WARN("Failed delete index, due to failed to get page, "
                      "file_id:%d, page:%d",
                      file_id_, left_page);
@@ -2060,7 +2060,7 @@ ReturnCode BplusTreeHandler::delete_entry_internal(PageNum page_num, const char*
                 right_page = parent->rids[delete_index + 1].page_num;
                 rc         = can_merge_with_other(&right_handle, right_page,
                                                   &can_merge_with_right);
-                if (rc != ReturnCode::SUCCESS) {
+                if (rc != ResultCode::SUCCESS) {
                     LOG_WARN("Failed to delete index, due to failed to get "
                              "right page of current delete page, file_id:%d, "
                              "right_page:$d",
@@ -2081,7 +2081,7 @@ ReturnCode BplusTreeHandler::delete_entry_internal(PageNum page_num, const char*
     } else if (force_collapse_with_right) {
         rc = coalesce_node(parent_handle, page_handle, right_handle,
                            delete_index, true, node_delete_index, pkey);
-        if (rc == ReturnCode::SUCCESS) {
+        if (rc == ResultCode::SUCCESS) {
             disk_buffer_pool_->unpin_page(&page_handle);
             disk_buffer_pool_->dispose_page(file_id_, page_num);
             page_handle.open = false;
@@ -2089,7 +2089,7 @@ ReturnCode BplusTreeHandler::delete_entry_internal(PageNum page_num, const char*
     } else {
         rc = coalesce_node(parent_handle, left_handle, page_handle,
                            delete_index - 1, false, node_delete_index, pkey);
-        if (rc == ReturnCode::SUCCESS) {
+        if (rc == ResultCode::SUCCESS) {
             disk_buffer_pool_->unpin_page(&left_handle);
             disk_buffer_pool_->dispose_page(file_id_, left_page);
             left_handle.open = false;
@@ -2097,7 +2097,7 @@ ReturnCode BplusTreeHandler::delete_entry_internal(PageNum page_num, const char*
     }
 
 cleanup:
-    if (rc != ReturnCode::SUCCESS) {
+    if (rc != ResultCode::SUCCESS) {
         insert_entry_into_node(
             node, pkey, (RID*)(pkey + file_header_.attr_length), page_num);
     }
@@ -2115,55 +2115,55 @@ cleanup:
     return rc;
 }
 
-ReturnCode BplusTreeHandler::delete_entry(const char* data, const RID* rid) {
+ResultCode BplusTreeHandler::delete_entry(const char* data, const RID* rid) {
     if (file_id_ < 0) {
         LOG_WARN("Failed to delete index entry, due to index is't ready");
-        return ReturnCode::RECORD_CLOSED;
+        return ResultCode::RECORD_CLOSED;
     }
 
     char* pkey = (char*)mem_pool_item_->alloc();
     if (nullptr == pkey) {
         LOG_WARN("Failed to alloc memory for key. size=%d",
                  file_header_.key_length);
-        return ReturnCode::NOMEM;
+        return ResultCode::NOMEM;
     }
     memcpy(pkey, data, file_header_.attr_length);
     memcpy(pkey + file_header_.attr_length, rid, sizeof(*rid));
 
     PageNum leaf_page;
-    ReturnCode      rc = find_leaf(pkey, &leaf_page);
-    if (rc != ReturnCode::SUCCESS) {
+    ResultCode      rc = find_leaf(pkey, &leaf_page);
+    if (rc != ResultCode::SUCCESS) {
         mem_pool_item_->free(pkey);
         return rc;
     }
     rc = delete_entry_internal(leaf_page, pkey);
-    if (rc != ReturnCode::SUCCESS) {
+    if (rc != ResultCode::SUCCESS) {
         LOG_WARN("Failed to delete index %d", file_id_);
         mem_pool_item_->free(pkey);
         return rc;
     }
     mem_pool_item_->free(pkey);
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
-ReturnCode BplusTreeHandler::find_first_index_satisfied(CompOp compop, const char* key,
+ResultCode BplusTreeHandler::find_first_index_satisfied(CompOp compop, const char* key,
                                                 PageNum* page_num,
                                                 int*     rididx) {
     BPPageHandle page_handle;
     IndexNode*   node;
     PageNum      leaf_page, next;
     char *       pdata, *pkey;
-    ReturnCode           rc;
+    ResultCode           rc;
     int          i, tmp;
     RID          rid;
     if (compop == LESS_THAN || compop == LESS_EQUAL || compop == NOT_EQUAL) {
         rc = get_first_leaf_page(page_num);
-        if (rc != ReturnCode::SUCCESS) {
+        if (rc != ResultCode::SUCCESS) {
             LOG_WARN("Failed to get first leaf page, index:%d", file_id_);
             return rc;
         }
         *rididx = 0;
-        return ReturnCode::SUCCESS;
+        return ResultCode::SUCCESS;
     }
     rid.page_num = -1;
     rid.slot_num = -1;
@@ -2171,13 +2171,13 @@ ReturnCode BplusTreeHandler::find_first_index_satisfied(CompOp compop, const cha
     if (pkey == nullptr) {
         LOG_WARN("Failed to alloc memory for key. size=%d",
                  file_header_.key_length);
-        return ReturnCode::NOMEM;
+        return ResultCode::NOMEM;
     }
     memcpy(pkey, key, file_header_.attr_length);
     memcpy(pkey + file_header_.attr_length, &rid, sizeof(RID));
 
     rc = find_leaf(pkey, &leaf_page);
-    if (rc != ReturnCode::SUCCESS) {
+    if (rc != ResultCode::SUCCESS) {
         LOG_WARN("Failed to find leaf page of index %d", file_id_);
         mem_pool_item_->free(pkey);
         return rc;
@@ -2188,7 +2188,7 @@ ReturnCode BplusTreeHandler::find_first_index_satisfied(CompOp compop, const cha
 
     while (next > 0) {
         rc = disk_buffer_pool_->get_this_page(file_id_, next, &page_handle);
-        if (rc != ReturnCode::SUCCESS) {
+        if (rc != ResultCode::SUCCESS) {
             LOG_WARN("Failed to scan index due to failed to load page %d of "
                      "index %d",
                      next, file_id_);
@@ -2207,7 +2207,7 @@ ReturnCode BplusTreeHandler::find_first_index_satisfied(CompOp compop, const cha
 
                     *rididx = i;
                     disk_buffer_pool_->unpin_page(&page_handle);
-                    return ReturnCode::SUCCESS;
+                    return ResultCode::SUCCESS;
                 }
             }
             if (compop == GREAT_THAN) {
@@ -2215,7 +2215,7 @@ ReturnCode BplusTreeHandler::find_first_index_satisfied(CompOp compop, const cha
                     disk_buffer_pool_->get_page_num(&page_handle, page_num);
                     *rididx = i;
                     disk_buffer_pool_->unpin_page(&page_handle);
-                    return ReturnCode::SUCCESS;
+                    return ResultCode::SUCCESS;
                 }
             }
         }
@@ -2223,11 +2223,11 @@ ReturnCode BplusTreeHandler::find_first_index_satisfied(CompOp compop, const cha
     }
     disk_buffer_pool_->unpin_page(&page_handle);
 
-    return ReturnCode::RECORD_EOF;
+    return ResultCode::RECORD_EOF;
 }
 
-ReturnCode BplusTreeHandler::get_first_leaf_page(PageNum* leaf_page) {
-    ReturnCode           rc;
+ResultCode BplusTreeHandler::get_first_leaf_page(PageNum* leaf_page) {
+    ResultCode           rc;
     BPPageHandle page_handle;
     PageNum      page_num;
     IndexNode*   node;
@@ -2242,7 +2242,7 @@ ReturnCode BplusTreeHandler::get_first_leaf_page(PageNum* leaf_page) {
         }
 
         rc = disk_buffer_pool_->get_this_page(file_id_, page_num, &page_handle);
-        if (rc != ReturnCode::SUCCESS) {
+        if (rc != ResultCode::SUCCESS) {
             LOG_WARN("Failed to load page %d of index %d", page_num, file_id_);
             return rc;
         }
@@ -2258,16 +2258,16 @@ ReturnCode BplusTreeHandler::get_first_leaf_page(PageNum* leaf_page) {
         disk_buffer_pool_->get_page_num(&root_page_handle_, leaf_page);
     }
 
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
 BplusTreeScanner::BplusTreeScanner(BplusTreeHandler& index_handler)
     : index_handler_(index_handler) {}
 
-ReturnCode BplusTreeScanner::open(CompOp comp_op, const char* value) {
-    ReturnCode rc;
+ResultCode BplusTreeScanner::open(CompOp comp_op, const char* value) {
+    ResultCode rc;
     if (opened_) {
-        return ReturnCode::RECORD_OPENNED;
+        return ResultCode::RECORD_OPENNED;
     }
 
     comp_op_         = comp_op;
@@ -2276,14 +2276,14 @@ ReturnCode BplusTreeScanner::open(CompOp comp_op, const char* value) {
     if (value_copy == nullptr) {
         LOG_WARN("Failed to alloc memory for value. size=%d",
                  index_handler_.file_header_.attr_length);
-        return ReturnCode::NOMEM;
+        return ResultCode::NOMEM;
     }
     memcpy(value_copy, value, index_handler_.file_header_.attr_length);
     value_ = value_copy; // mem_pool_item_->free value_
     rc     = index_handler_.find_first_index_satisfied(
         comp_op, value, &next_page_num_, &index_in_node_);
-    if (rc != ReturnCode::SUCCESS) {
-        if (rc == ReturnCode::RECORD_EOF) {
+    if (rc != ResultCode::SUCCESS) {
+        if (rc == ResultCode::RECORD_EOF) {
             next_page_num_ = -1;
             index_in_node_ = -1;
         } else
@@ -2293,50 +2293,50 @@ ReturnCode BplusTreeScanner::open(CompOp comp_op, const char* value) {
     next_index_of_page_handle_ = 0;
     pinned_page_count_         = 0;
     opened_                    = true;
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
-ReturnCode BplusTreeScanner::close() {
+ResultCode BplusTreeScanner::close() {
     if (!opened_) {
-        return ReturnCode::RECORD_SCANCLOSED;
+        return ResultCode::RECORD_SCANCLOSED;
     }
     free((void*)value_);
     value_  = nullptr;
     opened_ = false;
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
-ReturnCode BplusTreeScanner::next_entry(RID* rid) {
-    ReturnCode rc;
+ResultCode BplusTreeScanner::next_entry(RID* rid) {
+    ResultCode rc;
     if (!opened_) {
-        return ReturnCode::RECORD_CLOSED;
+        return ResultCode::RECORD_CLOSED;
     }
     rc = get_next_idx_in_memory(
         rid); // 和RM中一样，有可能有错误，一次只查当前页和当前页的下一页，有待确定
-    if (rc == ReturnCode::RECORD_NO_MORE_IDX_IN_MEM) {
+    if (rc == ResultCode::RECORD_NO_MORE_IDX_IN_MEM) {
         rc = find_idx_pages();
-        if (rc != ReturnCode::SUCCESS) {
+        if (rc != ResultCode::SUCCESS) {
             return rc;
         }
         return get_next_idx_in_memory(rid);
     } else {
-        if (rc != ReturnCode::SUCCESS) {
+        if (rc != ResultCode::SUCCESS) {
             return rc;
         }
     }
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
-ReturnCode BplusTreeScanner::find_idx_pages() {
-    ReturnCode rc;
+ResultCode BplusTreeScanner::find_idx_pages() {
+    ResultCode rc;
     if (!opened_) {
-        return ReturnCode::RECORD_CLOSED;
+        return ResultCode::RECORD_CLOSED;
     }
     if (pinned_page_count_ > 0) {
         for (int i = 0; i < pinned_page_count_; i++) {
             rc =
                 index_handler_.disk_buffer_pool_->unpin_page(page_handles_ + i);
-            if (rc != ReturnCode::SUCCESS) {
+            if (rc != ResultCode::SUCCESS) {
                 return rc;
             }
         }
@@ -2349,13 +2349,13 @@ ReturnCode BplusTreeScanner::find_idx_pages() {
             break;
         rc = index_handler_.disk_buffer_pool_->get_this_page(
             index_handler_.file_id_, next_page_num_, page_handles_ + i);
-        if (rc != ReturnCode::SUCCESS) {
+        if (rc != ResultCode::SUCCESS) {
             return rc;
         }
         char* pdata;
         rc = index_handler_.disk_buffer_pool_->get_data(page_handles_ + i,
                                                         &pdata);
-        if (rc != ReturnCode::SUCCESS) {
+        if (rc != ResultCode::SUCCESS) {
             return rc;
         }
 
@@ -2364,27 +2364,27 @@ ReturnCode BplusTreeScanner::find_idx_pages() {
         next_page_num_ = node->next_brother;
     }
     if (pinned_page_count_ > 0)
-        return ReturnCode::SUCCESS;
-    return ReturnCode::RECORD_EOF;
+        return ResultCode::SUCCESS;
+    return ResultCode::RECORD_EOF;
 }
 
-ReturnCode BplusTreeScanner::get_next_idx_in_memory(RID* rid) {
+ResultCode BplusTreeScanner::get_next_idx_in_memory(RID* rid) {
     char*      pdata;
     IndexNode* node;
-    ReturnCode         rc;
+    ResultCode         rc;
     if (next_index_of_page_handle_ >= pinned_page_count_) {
-        return ReturnCode::RECORD_NO_MORE_IDX_IN_MEM;
+        return ResultCode::RECORD_NO_MORE_IDX_IN_MEM;
     }
 
     if (next_page_num_ == -1 && index_in_node_ == -1) {
-        return ReturnCode::RECORD_EOF;
+        return ResultCode::RECORD_EOF;
     }
 
     for (; next_index_of_page_handle_ < pinned_page_count_;
          next_index_of_page_handle_++) {
         rc = index_handler_.disk_buffer_pool_->get_data(
             page_handles_ + next_index_of_page_handle_, &pdata);
-        if (rc != ReturnCode::SUCCESS) {
+        if (rc != ResultCode::SUCCESS) {
             LOG_WARN("Failed to get data from disk buffer pool. rc=%s", strrc);
             return rc;
         }
@@ -2396,13 +2396,13 @@ ReturnCode BplusTreeScanner::get_next_idx_in_memory(RID* rid) {
                                       index_handler_.file_header_.key_length)) {
                 memcpy(rid, node->rids + index_in_node_, sizeof(RID));
                 index_in_node_++;
-                return ReturnCode::SUCCESS;
+                return ResultCode::SUCCESS;
             }
         }
 
         index_in_node_ = 0;
     }
-    return ReturnCode::RECORD_NO_MORE_IDX_IN_MEM;
+    return ResultCode::RECORD_NO_MORE_IDX_IN_MEM;
 }
 bool BplusTreeScanner::satisfy_condition(const char* pkey) {
     int         i1 = 0, i2 = 0;

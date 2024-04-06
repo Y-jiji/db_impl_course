@@ -46,18 +46,18 @@ FieldMeta::FieldMeta()
     : attr_type_(AttrType::UNDEFINED), attr_offset_(-1), attr_len_(0),
       visible_(false) {}
 
-ReturnCode FieldMeta::init(const char* name, AttrType attr_type, int attr_offset,
+ResultCode FieldMeta::init(const char* name, AttrType attr_type, int attr_offset,
                    int attr_len, bool visible) {
     if (common::is_blank(name)) {
         LOG_WARN("Name cannot be empty");
-        return ReturnCode::INVALID_ARGUMENT;
+        return ResultCode::INVALID_ARGUMENT;
     }
 
     if (AttrType::UNDEFINED == attr_type || attr_offset < 0 || attr_len <= 0) {
         LOG_WARN("Invalid argument. name=%s, attr_type=%d, attr_offset=%d, "
                  "attr_len=%d",
                  name, attr_type, attr_offset, attr_len);
-        return ReturnCode::INVALID_ARGUMENT;
+        return ResultCode::INVALID_ARGUMENT;
     }
 
     name_        = name;
@@ -67,7 +67,7 @@ ReturnCode FieldMeta::init(const char* name, AttrType attr_type, int attr_offset
     visible_     = visible;
 
     LOG_INFO("Init a field with name=%s", name);
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
 const char* FieldMeta::name() const { return name_.c_str(); }
@@ -93,12 +93,12 @@ void FieldMeta::to_json(Json::Value& json_value) const {
     json_value[FIELD_VISIBLE] = visible_;
 }
 
-ReturnCode FieldMeta::from_json(const Json::Value& json_value, FieldMeta& field) {
+ResultCode FieldMeta::from_json(const Json::Value& json_value, FieldMeta& field) {
     if (!json_value.isObject()) {
         LOG_ERROR(
             "Failed to deserialize field. json is not an object. json value=%s",
             json_value.toStyledString().c_str());
-        return ReturnCode::GENERIC_ERROR;
+        return ResultCode::GENERIC_ERROR;
     }
 
     const Json::Value& name_value    = json_value[FIELD_NAME];
@@ -110,34 +110,34 @@ ReturnCode FieldMeta::from_json(const Json::Value& json_value, FieldMeta& field)
     if (!name_value.isString()) {
         LOG_ERROR("Field name is not a string. json value=%s",
                   name_value.toStyledString().c_str());
-        return ReturnCode::GENERIC_ERROR;
+        return ResultCode::GENERIC_ERROR;
     }
     if (!type_value.isString()) {
         LOG_ERROR("Field type is not a string. json value=%s",
                   type_value.toStyledString().c_str());
-        return ReturnCode::GENERIC_ERROR;
+        return ResultCode::GENERIC_ERROR;
     }
 
     if (!offset_value.isInt()) {
         LOG_ERROR("Offset is not an integer. json value=%s",
                   offset_value.toStyledString().c_str());
-        return ReturnCode::GENERIC_ERROR;
+        return ResultCode::GENERIC_ERROR;
     }
     if (!len_value.isInt()) {
         LOG_ERROR("Len is not an integer. json value=%s",
                   len_value.toStyledString().c_str());
-        return ReturnCode::GENERIC_ERROR;
+        return ResultCode::GENERIC_ERROR;
     }
     if (!visible_value.isBool()) {
         LOG_ERROR("Visible field is not a bool value. json value=%s",
                   visible_value.toStyledString().c_str());
-        return ReturnCode::GENERIC_ERROR;
+        return ResultCode::GENERIC_ERROR;
     }
 
     AttrType type = attr_type_from_string(type_value.asCString());
     if (UNDEFINED == type) {
         LOG_ERROR("Got invalid field type. type=%d", type);
-        return ReturnCode::GENERIC_ERROR;
+        return ResultCode::GENERIC_ERROR;
     }
 
     const char* name    = name_value.asCString();

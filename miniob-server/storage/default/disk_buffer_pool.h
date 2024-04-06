@@ -22,7 +22,7 @@ See the Mulan PSL v2 for more details. */
 #include <sys/stat.h>
 #include <time.h>
 
-#include <rc.h>
+#include <result_code.h>
 #include <common/mm/mem_pool.h>
 
 typedef int PageNum;
@@ -114,59 +114,59 @@ class DiskBufferPool {
     /**
      * 创建一个名称为指定文件名的分页文件
      */
-    ReturnCode create_file(const char* file_name);
+    ResultCode create_file(const char* file_name);
 
     /**
      * 根据文件名打开一个分页文件，返回文件ID
      * @return
      */
-    ReturnCode open_file(const char* file_name, int* file_id);
+    ResultCode open_file(const char* file_name, int* file_id);
 
     /**
      * 关闭fileID对应的分页文件
      */
-    ReturnCode close_file(int file_id);
+    ResultCode close_file(int file_id);
 
     /**
      * 根据文件ID和页号获取指定页面到缓冲区，返回页面句柄指针。
      * @return
      */
-    ReturnCode get_this_page(int file_id, PageNum page_num, BPPageHandle* page_handle);
+    ResultCode get_this_page(int file_id, PageNum page_num, BPPageHandle* page_handle);
 
     /**
      * 在指定文件中分配一个新的页面，并将其放入缓冲区，返回页面句柄指针。
      * 分配页面时，如果文件中有空闲页，就直接分配一个空闲页；
      * 如果文件中没有空闲页，则扩展文件规模来增加新的空闲页。
      */
-    ReturnCode allocate_page(int file_id, BPPageHandle* page_handle);
+    ResultCode allocate_page(int file_id, BPPageHandle* page_handle);
 
     /**
      * 根据页面句柄指针返回对应的页面号
      */
-    ReturnCode get_page_num(BPPageHandle* page_handle, PageNum* page_num);
+    ResultCode get_page_num(BPPageHandle* page_handle, PageNum* page_num);
 
     /**
      * 根据页面句柄指针返回对应的数据区指针
      */
-    ReturnCode get_data(BPPageHandle* page_handle, char** data);
+    ResultCode get_data(BPPageHandle* page_handle, char** data);
 
     /**
      * 比purge_page多一个动作， 在磁盘上将对应的页数据删掉。
      */
-    ReturnCode dispose_page(int file_id, PageNum page_num);
+    ResultCode dispose_page(int file_id, PageNum page_num);
 
     /**
      * 释放指定文件关联的页的内存， 如果已经脏， 则刷到磁盘，除了pinned page
      * @param file_handle
      * @param page_num 如果不指定page_num 将刷新所有页
      */
-    ReturnCode purge_page(int file_id, PageNum page_num);
+    ResultCode purge_page(int file_id, PageNum page_num);
 
     /**
      * 标记指定页面为“脏”页。如果修改了页面的内容，则应调用此函数，
      * 以便该页面被淘汰出缓冲区时系统将新的页面数据写入磁盘文件
      */
-    ReturnCode mark_dirty(BPPageHandle* page_handle);
+    ResultCode mark_dirty(BPPageHandle* page_handle);
 
     /**
      * 此函数用于解除pageHandle对应页面的驻留缓冲区限制。
@@ -174,30 +174,30 @@ class DiskBufferPool {
      * 该页面被设置为驻留缓冲区状态，以防止其在处理过程中被置换出去，
      * 因此在该页面使用完之后应调用此函数解除该限制，使得该页面此后可以正常地被淘汰出缓冲区
      */
-    ReturnCode unpin_page(BPPageHandle* page_handle);
+    ResultCode unpin_page(BPPageHandle* page_handle);
 
     /**
      * 获取文件的总页数
      */
-    ReturnCode get_page_count(int file_id, int* page_count);
+    ResultCode get_page_count(int file_id, int* page_count);
 
-    ReturnCode purge_all_pages(int file_id);
+    ResultCode purge_all_pages(int file_id);
 
     protected:
-    ReturnCode allocate_page(Frame** buf);
+    ResultCode allocate_page(Frame** buf);
 
     /**
      * 刷新指定文件关联的所有脏页到磁盘，除了pinned page
      * @param file_handle
      * @param page_num 如果不指定page_num 将刷新所有页
      */
-    ReturnCode purge_page(BPFileHandle* file_handle, PageNum page_num);
-    ReturnCode purge_page(Frame* used_frame);
-    ReturnCode purge_all_pages(BPFileHandle* file_handle);
-    ReturnCode check_file_id(int file_id);
-    ReturnCode check_page_num(PageNum page_num, BPFileHandle* file_handle);
-    ReturnCode load_page(PageNum page_num, BPFileHandle* file_handle, Frame* frame);
-    ReturnCode flush_page(Frame* frame);
+    ResultCode purge_page(BPFileHandle* file_handle, PageNum page_num);
+    ResultCode purge_page(Frame* used_frame);
+    ResultCode purge_all_pages(BPFileHandle* file_handle);
+    ResultCode check_file_id(int file_id);
+    ResultCode check_page_num(PageNum page_num, BPFileHandle* file_handle);
+    ResultCode load_page(PageNum page_num, BPFileHandle* file_handle, Frame* frame);
+    ResultCode flush_page(Frame* frame);
 
     private:
     DiskBufferPool();

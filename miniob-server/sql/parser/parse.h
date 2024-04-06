@@ -14,9 +14,9 @@ See the Mulan PSL v2 for more details. */
 #ifndef __OBSERVER_SQL_PARSER_PARSE_H__
 #define __OBSERVER_SQL_PARSER_PARSE_H__
 
-#include <rc.h>
+#include <result_code.h>
 #include <sql/parser/parse_defs.h>
 
-ReturnCode parse(const char* st, Query* sqln);
+ResultCode parse(const char* st, Query* sqln);
 
 #endif //__OBSERVER_SQL_PARSER_PARSE_H__

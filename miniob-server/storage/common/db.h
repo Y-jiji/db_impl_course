@@ -18,7 +18,7 @@ See the Mulan PSL v2 for more details. */
 #include <unordered_map>
 #include <vector>
 
-#include <rc.h>
+#include <result_code.h>
 #include <sql/parser/parse_defs.h>
 
 class Table;
@@ -28,12 +28,12 @@ class Db {
     Db() = default;
     ~Db();
 
-    ReturnCode          init(const char* name, const char* dbpath);
+    ResultCode          init(const char* name, const char* dbpath);
 
-    ReturnCode          create_table(const char* table_name, int attribute_count,
+    ResultCode          create_table(const char* table_name, int attribute_count,
                              const AttrInfo* attributes);
 
-    ReturnCode          drop_table(const char* table_name);
+    ResultCode          drop_table(const char* table_name);
 
     Table*      find_table(const char* table_name) const;
 
@@ -41,10 +41,10 @@ class Db {
 
     void        all_tables(std::vector<std::string>& table_names) const;
 
-    ReturnCode          sync();
+    ResultCode          sync();
 
     private:
-    ReturnCode open_all_tables();
+    ResultCode open_all_tables();
 
     private:
     std::string                             name_;

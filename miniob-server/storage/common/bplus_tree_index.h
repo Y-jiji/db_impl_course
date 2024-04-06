@@ -22,18 +22,18 @@ class BplusTreeIndex : public Index {
     BplusTreeIndex() = default;
     virtual ~BplusTreeIndex() noexcept;
 
-    ReturnCode            create(const char* file_name, const IndexMeta& index_meta,
+    ResultCode            create(const char* file_name, const IndexMeta& index_meta,
                          const FieldMeta& field_meta);
-    ReturnCode            open(const char* file_name, const IndexMeta& index_meta,
+    ResultCode            open(const char* file_name, const IndexMeta& index_meta,
                        const FieldMeta& field_meta);
-    ReturnCode            close();
+    ResultCode            close();
 
-    ReturnCode            insert_entry(const char* record, const RID* rid) override;
-    ReturnCode            delete_entry(const char* record, const RID* rid) override;
+    ResultCode            insert_entry(const char* record, const RID* rid) override;
+    ResultCode            delete_entry(const char* record, const RID* rid) override;
 
     IndexScanner* create_scanner(CompOp comp_op, const char* value) override;
 
-    ReturnCode            sync() override;
+    ResultCode            sync() override;
 
     private:
     bool             inited_ = false;
@@ -45,8 +45,8 @@ class BplusTreeIndexScanner : public IndexScanner {
     BplusTreeIndexScanner(BplusTreeScanner* tree_scanner);
     ~BplusTreeIndexScanner() noexcept override;
 
-    ReturnCode next_entry(RID* rid) override;
-    ReturnCode destroy() override;
+    ResultCode next_entry(RID* rid) override;
+    ResultCode destroy() override;
 
     private:
     BplusTreeScanner* tree_scanner_;

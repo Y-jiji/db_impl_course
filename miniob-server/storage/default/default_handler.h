@@ -26,7 +26,7 @@ class DefaultHandler {
 
     virtual ~DefaultHandler() noexcept;
 
-    ReturnCode   init(const char* base_dir);
+    ResultCode   init(const char* base_dir);
     void destroy();
 
     /**
@@ -37,7 +37,7 @@ class DefaultHandler {
      * @param dbname
      * @return
      */
-    ReturnCode create_db(const char* dbname);
+    ResultCode create_db(const char* dbname);
 
     /**
      * 删除一个数据库，dbName为要删除的数据库对应文件夹的路径名。
@@ -45,21 +45,21 @@ class DefaultHandler {
      * @param dbname
      * @return
      */
-    ReturnCode drop_db(const char* dbname);
+    ResultCode drop_db(const char* dbname);
 
     /**
      * 改变系统的当前数据库为dbName对应的文件夹中的数据库。接口要求同dropDB
      * @param dbname
      * @return
      */
-    ReturnCode open_db(const char* dbname);
+    ResultCode open_db(const char* dbname);
 
     /**
      * 关闭当前数据库。
      * 该操作将关闭当前数据库中打开的所有文件，关闭文件操作将自动使所有相关的缓冲区页面更新到磁盘
      * @return
      */
-    ReturnCode close_db(const char* dbname);
+    ResultCode close_db(const char* dbname);
 
     /**
      * 执行一条除SELECT之外的SQL语句，如果执行成功，返回SUCCESS，否则返回错误码。
@@ -67,7 +67,7 @@ class DefaultHandler {
      * @param sql
      * @return
      */
-    ReturnCode execute(const char* sql);
+    ResultCode execute(const char* sql);
 
     /**
      * 创建一个名为relName的表。
@@ -80,7 +80,7 @@ class DefaultHandler {
      * @param attributes
      * @return
      */
-    ReturnCode create_table(const char* dbname, const char* relation_name,
+    ResultCode create_table(const char* dbname, const char* relation_name,
                     int attribute_count, const AttrInfo* attributes);
 
     /**
@@ -88,7 +88,7 @@ class DefaultHandler {
      * @param relName
      * @return
      */
-    ReturnCode drop_table(const char* dbname, const char* relation_name);
+    ResultCode drop_table(const char* dbname, const char* relation_name);
 
     /**
      * 该函数在关系relName的属性attrName上创建名为indexName的索引。
@@ -102,7 +102,7 @@ class DefaultHandler {
      * @param attrName
      * @return
      */
-    ReturnCode create_index(Transaction* transaction, const char* dbname, const char* relation_name,
+    ResultCode create_index(Transaction* transaction, const char* dbname, const char* relation_name,
                     const char* index_name, const char* attribute_name);
 
     /**
@@ -111,7 +111,7 @@ class DefaultHandler {
      * @param index_name
      * @return
      */
-    ReturnCode drop_index(Transaction* transaction, const char* dbname, const char* relation_name,
+    ResultCode drop_index(Transaction* transaction, const char* dbname, const char* relation_name,
                   const char* index_name);
 
     /**
@@ -124,7 +124,7 @@ class DefaultHandler {
      * @param values
      * @return
      */
-    ReturnCode insert_record(Transaction* transaction, const char* dbname, const char* relation_name,
+    ResultCode insert_record(Transaction* transaction, const char* dbname, const char* relation_name,
                      int value_num, const Value* values);
 
     /**
@@ -136,7 +136,7 @@ class DefaultHandler {
      * @param conditions
      * @return
      */
-    ReturnCode delete_record(Transaction* transaction, const char* dbname, const char* relation_name,
+    ResultCode delete_record(Transaction* transaction, const char* dbname, const char* relation_name,
                      int condition_num, const Condition* conditions,
                      int* deleted_count);
 
@@ -152,7 +152,7 @@ class DefaultHandler {
      * @param conditions
      * @return
      */
-    ReturnCode update_record(Transaction* transaction, const char* dbname, const char* relation_name,
+    ResultCode update_record(Transaction* transaction, const char* dbname, const char* relation_name,
                      const char* attribute_name, const Value* value,
                      int condition_num, const Condition* conditions,
                      int* updated_count);
@@ -161,7 +161,7 @@ class DefaultHandler {
     Db*    find_db(const char* dbname) const;
     Table* find_table(const char* dbname, const char* table_name) const;
 
-    ReturnCode     sync();
+    ResultCode     sync();
 
     public:
     static DefaultHandler& get_default();

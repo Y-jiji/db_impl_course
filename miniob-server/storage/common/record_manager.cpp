@@ -14,7 +14,7 @@ See the Mulan PSL v2 for more details. */
 #include <storage/common/condition_filter.h>
 #include <common/lang/bitmap.h>
 #include <common/log/log.h>
-#include <rc.h>
+#include <result_code.h>
 
 using namespace common;
 
@@ -48,17 +48,17 @@ RecordPageHandler::RecordPageHandler()
 
 RecordPageHandler::~RecordPageHandler() { cleanup(); }
 
-ReturnCode RecordPageHandler::init(DiskBufferPool& buffer_pool, int file_id,
+ResultCode RecordPageHandler::init(DiskBufferPool& buffer_pool, int file_id,
                            PageNum page_num) {
     if (disk_buffer_pool_ != nullptr) {
         LOG_WARN("Disk buffer pool has been opened for file_id:page_num %d:%d.",
                  file_id, page_num);
-        return ReturnCode::RECORD_OPENNED;
+        return ResultCode::RECORD_OPENNED;
     }
 
-    ReturnCode ret = ReturnCode::SUCCESS;
+    ResultCode ret = ResultCode::SUCCESS;
     if ((ret = buffer_pool.get_this_page(file_id, page_num, &page_handle_)) !=
-        ReturnCode::SUCCESS) {
+        ResultCode::SUCCESS) {
         LOG_ERROR("Failed to get page handle from disk buffer pool. "
                   "file_id:%d, ret=%d:%s",
                   file_id, ret, strrc(ret));
@@ -67,7 +67,7 @@ ReturnCode RecordPageHandler::init(DiskBufferPool& buffer_pool, int file_id,
 
     char* data;
     ret = buffer_pool.get_data(&page_handle_, &data);
-    if (ret != ReturnCode::SUCCESS) {
+    if (ret != ResultCode::SUCCESS) {
         LOG_ERROR("Failed to get page data. ret=%d:%s", ret, strrc(ret));
         return ret;
     }
@@ -81,10 +81,10 @@ ReturnCode RecordPageHandler::init(DiskBufferPool& buffer_pool, int file_id,
     return ret;
 }
 
-ReturnCode RecordPageHandler::init_empty_page(DiskBufferPool& buffer_pool, int file_id,
+ResultCode RecordPageHandler::init_empty_page(DiskBufferPool& buffer_pool, int file_id,
                                       PageNum page_num, int record_size) {
-    ReturnCode ret = init(buffer_pool, file_id, page_num);
-    if (ret != ReturnCode::SUCCESS) {
+    ResultCode ret = init(buffer_pool, file_id, page_num);
+    if (ret != ResultCode::SUCCESS) {
         LOG_ERROR(
             "Failed to init empty page file_id:page_num:record_size %d:%d:%d.",
             file_id, page_num, record_size);
@@ -105,10 +105,10 @@ ReturnCode RecordPageHandler::init_empty_page(DiskBufferPool& buffer_pool, int f
     memset(bitmap_, 0, page_bitmap_size(page_header_->record_capacity));
     disk_buffer_pool_->mark_dirty(&page_handle_);
 
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
-ReturnCode RecordPageHandler::cleanup() {
+ResultCode RecordPageHandler::cleanup() {
     if (disk_buffer_pool_ != nullptr) {
         disk_buffer_pool_->unpin_page(&page_handle_);
         disk_buffer_pool_ = nullptr;
@@ -116,15 +116,15 @@ ReturnCode RecordPageHandler::cleanup() {
         //  skip reset page_header & bitmap
     }
 
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
-ReturnCode RecordPageHandler::insert_record(const char* data, RID* rid) {
+ResultCode RecordPageHandler::insert_record(const char* data, RID* rid) {
 
     if (page_header_->record_num == page_header_->record_capacity) {
         LOG_WARN("Page is full, file_id:page_num %d:%d.", file_id_,
                  page_handle_.frame->page.page_num);
-        return ReturnCode::RECORD_NOMEM;
+        return ResultCode::RECORD_NOMEM;
     }
 
     // 找到空闲位置
@@ -146,16 +146,16 @@ ReturnCode RecordPageHandler::insert_record(const char* data, RID* rid) {
 
     // LOG_TRACE("Insert record. rid page_num=%d, slot num=%d", get_page_num(),
     // index);
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
-ReturnCode RecordPageHandler::update_record(const Record* rec) {
+ResultCode RecordPageHandler::update_record(const Record* rec) {
     if (rec->rid.slot_num >= page_header_->record_capacity) {
         LOG_ERROR("Invalid slot_num %d, exceed page's record capacity, "
                   "file_id:page_num %d:%d.",
                   rec->rid.slot_num, file_id_,
                   page_handle_.frame->page.page_num);
-        return ReturnCode::INVALID_ARGUMENT;
+        return ResultCode::INVALID_ARGUMENT;
     }
 
     Bitmap bitmap(bitmap_, page_header_->record_capacity);
@@ -163,7 +163,7 @@ ReturnCode RecordPageHandler::update_record(const Record* rec) {
         LOG_ERROR("Invalid slot_num %d, slot is empty, file_id:page_num %d:%d.",
                   rec->rid.slot_num, file_id_,
                   page_handle_.frame->page.page_num);
-        return ReturnCode::RECORD_RECORD_NOT_EXIST;
+        return ResultCode::RECORD_RECORD_NOT_EXIST;
     } else {
         char* record_data = get_record_data(rec->rid.slot_num);
         memcpy(record_data, rec->data, page_header_->record_real_size);
@@ -171,16 +171,16 @@ ReturnCode RecordPageHandler::update_record(const Record* rec) {
         disk_buffer_pool_->mark_dirty(&page_handle_);
         // LOG_TRACE("Update record. file_id=%d, page num=%d,slot=%d", file_id_,
         // rec->rid.page_num, rec->rid.slot_num);
-        return ReturnCode::SUCCESS;
+        return ResultCode::SUCCESS;
     }
 }
 
-ReturnCode RecordPageHandler::delete_record(const RID* rid) {
+ResultCode RecordPageHandler::delete_record(const RID* rid) {
     if (rid->slot_num >= page_header_->record_capacity) {
         LOG_ERROR("Invalid slot_num %d, exceed page's record capacity, "
                   "file_id:page_num %d:%d.",
                   rid->slot_num, file_id_, page_handle_.frame->page.page_num);
-        return ReturnCode::INVALID_ARGUMENT;
+        return ResultCode::INVALID_ARGUMENT;
     }
 
     Bitmap bitmap(bitmap_, page_header_->record_capacity);
@@ -196,46 +196,46 @@ ReturnCode RecordPageHandler::delete_record(const RID* rid) {
             cleanup();
             disk_buffer_pool->dispose_page(file_id, page_num);
         }
-        return ReturnCode::SUCCESS;
+        return ResultCode::SUCCESS;
     } else {
         LOG_ERROR("Invalid slot_num %d, slot is empty, file_id:page_num %d:%d.",
                   rid->slot_num, file_id_, page_handle_.frame->page.page_num);
-        return ReturnCode::RECORD_RECORD_NOT_EXIST;
+        return ResultCode::RECORD_RECORD_NOT_EXIST;
     }
 }
 
-ReturnCode RecordPageHandler::get_record(const RID* rid, Record* rec) {
+ResultCode RecordPageHandler::get_record(const RID* rid, Record* rec) {
     if (rid->slot_num >= page_header_->record_capacity) {
         LOG_ERROR("Invalid slot_num:%d, exceed page's record capacity, "
                   "file_id:page_num %d:%d.",
                   rid->slot_num, file_id_, page_handle_.frame->page.page_num);
-        return ReturnCode::RECORD_INVALIDRID;
+        return ResultCode::RECORD_INVALIDRID;
     }
 
     Bitmap bitmap(bitmap_, page_header_->record_capacity);
     if (!bitmap.get_bit(rid->slot_num)) {
         LOG_ERROR("Invalid slot_num:%d, slot is empty, file_id:page_num %d:%d.",
                   rid->slot_num, file_id_, page_handle_.frame->page.page_num);
-        return ReturnCode::RECORD_RECORD_NOT_EXIST;
+        return ResultCode::RECORD_RECORD_NOT_EXIST;
     }
 
     rec->rid  = *rid;
     rec->data = get_record_data(rid->slot_num);
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
-ReturnCode RecordPageHandler::get_first_record(Record* rec) {
+ResultCode RecordPageHandler::get_first_record(Record* rec) {
     rec->rid.slot_num = -1;
     return get_next_record(rec);
 }
 
-ReturnCode RecordPageHandler::get_next_record(Record* rec) {
+ResultCode RecordPageHandler::get_next_record(Record* rec) {
     if (rec->rid.slot_num >= page_header_->record_capacity - 1) {
         LOG_ERROR("Invalid slot_num:%d, exceed page's record capacity, "
                   "file_id:page_num %d:%d.",
                   rec->rid.slot_num, file_id_,
                   page_handle_.frame->page.page_num);
-        return ReturnCode::RECORD_EOF;
+        return ResultCode::RECORD_EOF;
     }
 
     Bitmap bitmap(bitmap_, page_header_->record_capacity);
@@ -244,13 +244,13 @@ ReturnCode RecordPageHandler::get_next_record(Record* rec) {
     if (index < 0) {
         LOG_WARN("There is no empty slot on page -- file_id:%d, page_num:%d.",
                  file_id_, page_handle_.frame->page.page_num);
-        return ReturnCode::RECORD_EOF;
+        return ResultCode::RECORD_EOF;
     }
 
     rec->rid.page_num = get_page_num();
     rec->rid.slot_num = index;
     rec->data         = get_record_data(index);
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
 PageNum RecordPageHandler::get_page_num() const {
@@ -269,18 +269,18 @@ bool RecordPageHandler::is_full() const {
 RecordFileHandler::RecordFileHandler()
     : disk_buffer_pool_(nullptr), file_id_(-1) {}
 
-ReturnCode RecordFileHandler::init(DiskBufferPool* buffer_pool, int file_id) {
+ResultCode RecordFileHandler::init(DiskBufferPool* buffer_pool, int file_id) {
 
     if (disk_buffer_pool_ != nullptr) {
         LOG_ERROR("%d has been openned.", file_id);
-        return ReturnCode::RECORD_OPENNED;
+        return ResultCode::RECORD_OPENNED;
     }
 
     disk_buffer_pool_ = buffer_pool;
     file_id_          = file_id;
 
     LOG_INFO("Successfully open %d.", file_id);
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
 void RecordFileHandler::close() {
@@ -289,13 +289,13 @@ void RecordFileHandler::close() {
     }
 }
 
-ReturnCode RecordFileHandler::insert_record(const char* data, int record_size,
+ResultCode RecordFileHandler::insert_record(const char* data, int record_size,
                                     RID* rid) {
-    ReturnCode ret = ReturnCode::SUCCESS;
+    ResultCode ret = ResultCode::SUCCESS;
     // 找到没有填满的页面
     int page_count = 0;
     if ((ret = disk_buffer_pool_->get_page_count(file_id_, &page_count)) !=
-        ReturnCode::SUCCESS) {
+        ResultCode::SUCCESS) {
         LOG_ERROR("Failed to get page count while inserting record, file_id:%d",
                   this->file_id_);
         return ret;
@@ -307,7 +307,7 @@ ReturnCode RecordFileHandler::insert_record(const char* data, int record_size,
             // 当前buffer pool 有页面时才尝试加载第一页
             // 参考diskBufferPool，有效page的pageNum从1开始
             if ((ret = record_page_handler_.init(*disk_buffer_pool_, file_id_,
-                                                 1)) != ReturnCode::SUCCESS) {
+                                                 1)) != ResultCode::SUCCESS) {
                 LOG_ERROR(
                     "Failed to init record page handler, file_id:%d, ret=%d",
                     file_id_, ret);
@@ -330,7 +330,7 @@ ReturnCode RecordFileHandler::insert_record(const char* data, int record_size,
             record_page_handler_.cleanup();
             ret = record_page_handler_.init(*disk_buffer_pool_, file_id_,
                                             current_page_num);
-            if (ret != ReturnCode::SUCCESS && ret != ReturnCode::BUFFERPOOL_INVALID_PAGE_NUM) {
+            if (ret != ResultCode::SUCCESS && ret != ResultCode::BUFFERPOOL_INVALID_PAGE_NUM) {
                 LOG_ERROR("Failed to init record page handler. page number is "
                           "%d. ret=%d:%s",
                           current_page_num, ret, strrc(ret));
@@ -348,7 +348,7 @@ ReturnCode RecordFileHandler::insert_record(const char* data, int record_size,
     if (!page_found) {
         BPPageHandle page_handle;
         if ((ret = disk_buffer_pool_->allocate_page(file_id_, &page_handle)) !=
-            ReturnCode::SUCCESS) {
+            ResultCode::SUCCESS) {
             LOG_ERROR("Failed to allocate page while inserting record. "
                       "file_it:%d, ret:%d",
                       file_id_, ret);
@@ -359,17 +359,17 @@ ReturnCode RecordFileHandler::insert_record(const char* data, int record_size,
         record_page_handler_.cleanup();
         ret = record_page_handler_.init_empty_page(
             *disk_buffer_pool_, file_id_, current_page_num, record_size);
-        if (ret != ReturnCode::SUCCESS) {
+        if (ret != ResultCode::SUCCESS) {
             LOG_ERROR("Failed to init empty page. file_id:%d, ret:%d", file_id_,
                       ret);
-            if (ReturnCode::SUCCESS != disk_buffer_pool_->unpin_page(&page_handle)) {
+            if (ResultCode::SUCCESS != disk_buffer_pool_->unpin_page(&page_handle)) {
                 LOG_ERROR("Failed to unpin page. file_id:%d", file_id_);
             }
             return ret;
         }
 
         //@@@ TODO, remove unpin page here
-        //    if (ReturnCode::SUCCESS != disk_buffer_pool_->unpin_page(&page_handle)) {
+        //    if (ResultCode::SUCCESS != disk_buffer_pool_->unpin_page(&page_handle)) {
         //      LOG_ERROR("Failed to unpin page. file_id:%d", file_id_);
         //    }
     }
@@ -378,15 +378,15 @@ ReturnCode RecordFileHandler::insert_record(const char* data, int record_size,
     return record_page_handler_.insert_record(data, rid);
 }
 
-ReturnCode RecordFileHandler::update_record(const Record* rec) {
+ResultCode RecordFileHandler::update_record(const Record* rec) {
 
     if (record_page_handler_.get_page_num() == rec->rid.page_num) {
         return record_page_handler_.update_record(rec);
     }
-    ReturnCode                ret;
+    ResultCode                ret;
     RecordPageHandler page_handler;
     if ((ret = page_handler.init(*disk_buffer_pool_, file_id_,
-                                 rec->rid.page_num)) != ReturnCode::SUCCESS) {
+                                 rec->rid.page_num)) != ResultCode::SUCCESS) {
         LOG_ERROR(
             "Failed to init record page handler.page number=%d, file_id=%d",
             rec->rid.page_num, file_id_);
@@ -396,15 +396,15 @@ ReturnCode RecordFileHandler::update_record(const Record* rec) {
     return page_handler.update_record(rec);
 }
 
-ReturnCode RecordFileHandler::delete_record(const RID* rid) {
+ResultCode RecordFileHandler::delete_record(const RID* rid) {
     if (record_page_handler_.get_page_num() == rid->page_num) {
         return record_page_handler_.delete_record(rid);
     }
 
-    ReturnCode                ret = ReturnCode::SUCCESS;
+    ResultCode                ret = ResultCode::SUCCESS;
     RecordPageHandler page_handler;
     if ((ret != page_handler.init(*disk_buffer_pool_, file_id_,
-                                  rid->page_num)) != ReturnCode::SUCCESS) {
+                                  rid->page_num)) != ResultCode::SUCCESS) {
         LOG_ERROR(
             "Failed to init record page handler.page number=%d, file_id:%d",
             rid->page_num, file_id_);
@@ -413,12 +413,12 @@ ReturnCode RecordFileHandler::delete_record(const RID* rid) {
     return page_handler.delete_record(rid);
 }
 
-ReturnCode RecordFileHandler::get_record(const RID* rid, Record* rec) {
+ResultCode RecordFileHandler::get_record(const RID* rid, Record* rec) {
     // lock?
-    ReturnCode ret = ReturnCode::SUCCESS;
+    ResultCode ret = ResultCode::SUCCESS;
     if (nullptr == rid || nullptr == rec) {
         LOG_ERROR("Invalid rid %p or rec %p, one of them is null. ", rid, rec);
-        return ReturnCode::INVALID_ARGUMENT;
+        return ResultCode::INVALID_ARGUMENT;
     }
 
     if (record_page_handler_.get_page_num() == rid->page_num) {
@@ -427,7 +427,7 @@ ReturnCode RecordFileHandler::get_record(const RID* rid, Record* rec) {
 
     RecordPageHandler page_handler;
     if ((ret != page_handler.init(*disk_buffer_pool_, file_id_,
-                                  rid->page_num)) != ReturnCode::SUCCESS) {
+                                  rid->page_num)) != ResultCode::SUCCESS) {
         LOG_ERROR(
             "Failed to init record page handler.page number=%d, file_id:%d",
             rid->page_num, file_id_);
@@ -442,7 +442,7 @@ ReturnCode RecordFileHandler::get_record(const RID* rid, Record* rec) {
 RecordFileScanner::RecordFileScanner()
     : disk_buffer_pool_(nullptr), file_id_(-1), condition_filter_(nullptr) {}
 
-ReturnCode RecordFileScanner::open_scan(DiskBufferPool& buffer_pool, int file_id,
+ResultCode RecordFileScanner::open_scan(DiskBufferPool& buffer_pool, int file_id,
                                 ConditionFilter* condition_filter) {
     close_scan();
 
@@ -450,10 +450,10 @@ ReturnCode RecordFileScanner::open_scan(DiskBufferPool& buffer_pool, int file_id
     file_id_          = file_id;
 
     condition_filter_ = condition_filter;
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
-ReturnCode RecordFileScanner::close_scan() {
+ResultCode RecordFileScanner::close_scan() {
     if (disk_buffer_pool_ != nullptr) {
         disk_buffer_pool_ = nullptr;
     }
@@ -462,36 +462,36 @@ ReturnCode RecordFileScanner::close_scan() {
         condition_filter_ = nullptr;
     }
 
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
-ReturnCode RecordFileScanner::get_first_record(Record* rec) {
+ResultCode RecordFileScanner::get_first_record(Record* rec) {
     rec->rid.page_num = 1; // from 1 参考DiskBufferPool
     rec->rid.slot_num = -1;
     // rec->valid = false;
     return get_next_record(rec);
 }
 
-ReturnCode RecordFileScanner::get_next_record(Record* rec) {
+ResultCode RecordFileScanner::get_next_record(Record* rec) {
     if (nullptr == disk_buffer_pool_) {
         LOG_ERROR("Scanner has been closed.");
-        return ReturnCode::RECORD_CLOSED;
+        return ResultCode::RECORD_CLOSED;
     }
 
-    ReturnCode     ret            = ReturnCode::SUCCESS;
+    ResultCode     ret            = ResultCode::SUCCESS;
     Record current_record = *rec;
 
     int    page_count     = 0;
     if ((ret = disk_buffer_pool_->get_page_count(file_id_, &page_count)) !=
-        ReturnCode::SUCCESS) {
+        ResultCode::SUCCESS) {
         LOG_ERROR(
             "Failed to get page count while getting next record. file id=%d",
             file_id_);
-        return ReturnCode::RECORD_EOF;
+        return ResultCode::RECORD_EOF;
     }
 
     if (1 == page_count) {
-        return ReturnCode::RECORD_EOF;
+        return ResultCode::RECORD_EOF;
     }
 
     while (current_record.rid.page_num < page_count) {
@@ -501,13 +501,13 @@ ReturnCode RecordFileScanner::get_next_record(Record* rec) {
             record_page_handler_.cleanup();
             ret = record_page_handler_.init(*disk_buffer_pool_, file_id_,
                                             current_record.rid.page_num);
-            if (ret != ReturnCode::SUCCESS && ret != ReturnCode::BUFFERPOOL_INVALID_PAGE_NUM) {
+            if (ret != ResultCode::SUCCESS && ret != ResultCode::BUFFERPOOL_INVALID_PAGE_NUM) {
                 LOG_ERROR("Failed to init record page handler. page num=%d",
                           current_record.rid.page_num);
                 return ret;
             }
 
-            if (ReturnCode::BUFFERPOOL_INVALID_PAGE_NUM == ret) {
+            if (ResultCode::BUFFERPOOL_INVALID_PAGE_NUM == ret) {
                 current_record.rid.page_num++;
                 current_record.rid.slot_num = -1;
                 continue;
@@ -515,12 +515,12 @@ ReturnCode RecordFileScanner::get_next_record(Record* rec) {
         }
 
         ret = record_page_handler_.get_next_record(&current_record);
-        if (ReturnCode::SUCCESS == ret) {
+        if (ResultCode::SUCCESS == ret) {
             if (condition_filter_ == nullptr ||
                 condition_filter_->filter(current_record)) {
                 break; // got one
             }
-        } else if (ReturnCode::RECORD_EOF == ret) {
+        } else if (ResultCode::RECORD_EOF == ret) {
             current_record.rid.page_num++;
             current_record.rid.slot_num = -1;
         } else {
@@ -528,7 +528,7 @@ ReturnCode RecordFileScanner::get_next_record(Record* rec) {
         }
     }
 
-    if (ReturnCode::SUCCESS == ret) {
+    if (ResultCode::SUCCESS == ret) {
         *rec = current_record;
     }
     return ret;

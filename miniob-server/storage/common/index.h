@@ -17,7 +17,7 @@ See the Mulan PSL v2 for more details. */
 #include <stddef.h>
 #include <vector>
 
-#include <rc.h>
+#include <result_code.h>
 #include <storage/common/field_meta.h>
 #include <storage/common/index_meta.h>
 #include <storage/common/record_manager.h>
@@ -39,15 +39,15 @@ class Index {
 
     const IndexMeta&      index_meta() const { return index_meta_; }
 
-    virtual ReturnCode            insert_entry(const char* record, const RID* rid)  = 0;
-    virtual ReturnCode            delete_entry(const char* record, const RID* rid)  = 0;
+    virtual ResultCode            insert_entry(const char* record, const RID* rid)  = 0;
+    virtual ResultCode            delete_entry(const char* record, const RID* rid)  = 0;
 
     virtual IndexScanner* create_scanner(CompOp comp_op, const char* value) = 0;
 
-    virtual ReturnCode            sync()                                            = 0;
+    virtual ResultCode            sync()                                            = 0;
 
     protected:
-    ReturnCode init(const IndexMeta& index_meta, const FieldMeta& field_meta);
+    ResultCode init(const IndexMeta& index_meta, const FieldMeta& field_meta);
 
     protected:
     IndexMeta index_meta_;
@@ -59,8 +59,8 @@ class IndexScanner {
     IndexScanner()                  = default;
     virtual ~IndexScanner()         = default;
 
-    virtual ReturnCode next_entry(RID* rid) = 0;
-    virtual ReturnCode destroy()            = 0;
+    virtual ResultCode next_entry(RID* rid) = 0;
+    virtual ResultCode destroy()            = 0;
 };
 
 #endif // __OBSERVER_STORAGE_COMMON_INDEX_H_

@@ -18,7 +18,7 @@ See the Mulan PSL v2 for more details. */
 #include <vector>
 
 #include <common/lang/serializable.h>
-#include <rc.h>
+#include <result_code.h>
 #include <storage/common/field_meta.h>
 #include <storage/common/index_meta.h>
 
@@ -31,9 +31,9 @@ class TableMeta : public common::Serializable {
 
     void swap(TableMeta& other) noexcept;
 
-    ReturnCode   init(const char* name, int field_num, const AttrInfo attributes[]);
+    ResultCode   init(const char* name, int field_num, const AttrInfo attributes[]);
 
-    ReturnCode   add_index(const IndexMeta& index);
+    ResultCode   add_index(const IndexMeta& index);
 
     public:
     const char*      name() const;
@@ -59,7 +59,7 @@ class TableMeta : public common::Serializable {
     void desc(std::ostream& os) const;
 
     protected:
-    static ReturnCode init_sys_fields();
+    static ResultCode init_sys_fields();
 
     protected:
     std::string            name_;

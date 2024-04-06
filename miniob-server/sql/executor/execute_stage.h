@@ -15,7 +15,7 @@ See the Mulan PSL v2 for more details. */
 #define __OBSERVER_SQL_EXECUTE_STAGE_H__
 
 #include <common/seda/stage.h>
-#include <rc.h>
+#include <result_code.h>
 #include <sql/parser/parse.h>
 
 class SessionEvent;
@@ -37,7 +37,7 @@ class ExecuteStage : public common::Stage {
                         common::CallbackContext* context) override;
 
     void handle_request(common::StageEvent* event);
-    ReturnCode   do_select(const char* db, Query* sql, SessionEvent* session_event);
+    ResultCode   do_select(const char* db, Query* sql, SessionEvent* session_event);
 
     protected:
 

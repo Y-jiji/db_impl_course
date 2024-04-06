@@ -14,7 +14,7 @@ See the Mulan PSL v2 for more details. */
 #ifndef __OBSERVER_STORAGE_COMMON_INDEX_META_H__
 #define __OBSERVER_STORAGE_COMMON_INDEX_META_H__
 
-#include <rc.h>
+#include <result_code.h>
 #include <string>
 
 class TableMeta;
@@ -28,7 +28,7 @@ class IndexMeta {
     public:
     IndexMeta() = default;
 
-    ReturnCode init(const char* name, const FieldMeta& field);
+    ResultCode init(const char* name, const FieldMeta& field);
 
     public:
     const char* name() const;
@@ -38,7 +38,7 @@ class IndexMeta {
 
     public:
     void      to_json(Json::Value& json_value) const;
-    static ReturnCode from_json(const TableMeta& table, const Json::Value& json_value,
+    static ResultCode from_json(const TableMeta& table, const Json::Value& json_value,
                         IndexMeta& index);
 
     protected:

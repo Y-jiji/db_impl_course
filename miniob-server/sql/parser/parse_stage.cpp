@@ -119,8 +119,8 @@ StageEvent* ParseStage::handle_request(StageEvent* event) {
         return nullptr;
     }
 
-    ReturnCode ret = parse(sql.c_str(), result);
-    if (ret != ReturnCode::SUCCESS) {
+    ResultCode ret = parse(sql.c_str(), result);
+    if (ret != ResultCode::SUCCESS) {
         // set error information to event
         const char* error = result->sstr.errors != nullptr ? result->sstr.errors
                                                            : "Unknown error";

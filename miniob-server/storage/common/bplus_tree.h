@@ -121,40 +121,40 @@ class BplusTreeHandler {
      * 此函数创建一个名为fileName的索引。
      * attrType描述被索引属性的类型，attrLength描述被索引属性的长度
      */
-    ReturnCode create(const char* file_name, AttrType attr_type, int attr_length);
+    ResultCode create(const char* file_name, AttrType attr_type, int attr_length);
 
     /**
      * 打开名为fileName的索引文件。
      * 如果方法调用成功，则indexHandle为指向被打开的索引句柄的指针。
      * 索引句柄用于在索引中插入或删除索引项，也可用于索引的扫描
      */
-    ReturnCode open(const char* file_name);
+    ResultCode open(const char* file_name);
 
     /**
      * 关闭句柄indexHandle对应的索引文件
      */
-    ReturnCode close();
+    ResultCode close();
 
     /**
      * 此函数向IndexHandle对应的索引中插入一个索引项。
      * 参数pData指向要插入的属性值，参数rid标识该索引项对应的元组，
      * 即向索引中插入一个值为（*pData，rid）的键值对
      */
-    ReturnCode insert_entry(const char* pkey, const RID* rid);
+    ResultCode insert_entry(const char* pkey, const RID* rid);
 
     /**
      * 从IndexHandle句柄对应的索引中删除一个值为（*pData，rid）的索引项
      * @return RECORD_INVALID_KEY 指定值不存在
      */
-    ReturnCode delete_entry(const char* pkey, const RID* rid);
+    ResultCode delete_entry(const char* pkey, const RID* rid);
 
     /**
      * 获取指定值的record
      * @param rid  返回值，记录记录所在的页面号和slot
      */
-    ReturnCode        get_entry(const char* pkey, std::list<RID>& rids);
+    ResultCode        get_entry(const char* pkey, std::list<RID>& rids);
 
-    ReturnCode        sync();
+    ResultCode        sync();
 
     const int get_file_id() { return file_id_; }
 
@@ -167,41 +167,41 @@ class BplusTreeHandler {
     bool validate_tree();
 
     public:
-    ReturnCode   print_tree();
-    ReturnCode   print_node(IndexNode* node, PageNum page_num);
-    ReturnCode   print_leafs();
+    ResultCode   print_tree();
+    ResultCode   print_node(IndexNode* node, PageNum page_num);
+    ResultCode   print_leafs();
 
     bool validate_node(IndexNode* node);
     bool validate_leaf_link();
 
     protected:
-    ReturnCode find_leaf(const char* pkey, PageNum* leaf_page);
+    ResultCode find_leaf(const char* pkey, PageNum* leaf_page);
 
-    ReturnCode insert_into_parent(PageNum parent_page, BPPageHandle& left_page_handle,
+    ResultCode insert_into_parent(PageNum parent_page, BPPageHandle& left_page_handle,
                           const char* pkey, BPPageHandle& right_page_handle);
-    ReturnCode insert_intern_node(BPPageHandle& parent_page_handle,
+    ResultCode insert_intern_node(BPPageHandle& parent_page_handle,
                           BPPageHandle& left_page_handle,
                           BPPageHandle& right_page_handle, const char* pkey);
-    ReturnCode split_leaf(BPPageHandle& leaf_page_handle);
-    ReturnCode split_intern_node(BPPageHandle& parent_page_handle, const char* pkey);
+    ResultCode split_leaf(BPPageHandle& leaf_page_handle);
+    ResultCode split_intern_node(BPPageHandle& parent_page_handle, const char* pkey);
 
-    ReturnCode delete_entry_internal(PageNum page_num, const char* pkey);
-    ReturnCode coalesce_node(BPPageHandle& parent_handle, BPPageHandle& left_handle,
+    ResultCode delete_entry_internal(PageNum page_num, const char* pkey);
+    ResultCode coalesce_node(BPPageHandle& parent_handle, BPPageHandle& left_handle,
                      BPPageHandle& right_handle, int delete_index,
                      bool check_change_leaf_key, int node_delete_index,
                      const char* pkey);
 
-    ReturnCode insert_into_new_root(BPPageHandle& left_page_handle, const char* pkey,
+    ResultCode insert_into_new_root(BPPageHandle& left_page_handle, const char* pkey,
                             BPPageHandle& right_page_handle);
-    ReturnCode clean_root_after_delete(IndexNode* old_root);
+    ResultCode clean_root_after_delete(IndexNode* old_root);
 
-    ReturnCode insert_entry_into_node(IndexNode* node, const char* pkey, const RID* rid,
+    ResultCode insert_entry_into_node(IndexNode* node, const char* pkey, const RID* rid,
                               PageNum left_page);
-    ReturnCode delete_entry_from_node(IndexNode* node, const char* pkey,
+    ResultCode delete_entry_from_node(IndexNode* node, const char* pkey,
                               int& node_delete_index);
     void       delete_entry_from_node(IndexNode* node, const int delete_index);
 
-    ReturnCode         redistribute_nodes(BPPageHandle& parent_handle,
+    ResultCode         redistribute_nodes(BPPageHandle& parent_handle,
                                   BPPageHandle& left_handle,
                                   BPPageHandle& right_handle);
     void       redistribute_nodes(IndexNode* left_node, IndexNode* right_node,
@@ -209,7 +209,7 @@ class BplusTreeHandler {
                                   char* new_key);
     void       merge_nodes(IndexNode* left_node, IndexNode* right_node,
                            PageNum left_page, char* parent_key);
-    ReturnCode         can_merge_with_other(BPPageHandle* page_handle, PageNum page_num,
+    ResultCode         can_merge_with_other(BPPageHandle* page_handle, PageNum page_num,
                                     bool* can_merge);
     void       split_node(IndexNode* left_node, IndexNode* right_node,
                           PageNum left_page, PageNum right_page,
@@ -218,25 +218,25 @@ class BplusTreeHandler {
 
     void       get_entry_from_leaf(IndexNode* node, const char* pkey,
                                    std::list<RID>& rids, bool& continue_check);
-    ReturnCode         find_first_index_satisfied(CompOp comp_op, const char* pkey,
+    ResultCode         find_first_index_satisfied(CompOp comp_op, const char* pkey,
                                           PageNum* page_num, int* rididx);
-    ReturnCode         get_first_leaf_page(PageNum* leaf_page);
+    ResultCode         get_first_leaf_page(PageNum* leaf_page);
 
     IndexNode* get_index_node(char* page_data) const;
     void       swith_root(BPPageHandle& new_root_page_handle, IndexNode* root,
                           PageNum root_page);
 
     void change_children_parent(RID* rid, int rid_len, PageNum new_parent_page);
-    ReturnCode get_parent_changed_index(BPPageHandle& parent_handle, IndexNode*& parent,
+    ResultCode get_parent_changed_index(BPPageHandle& parent_handle, IndexNode*& parent,
                                 IndexNode* node, PageNum page_num,
                                 int& changed_index);
-    ReturnCode change_leaf_parent_key_insert(IndexNode* node, int changed_indx,
+    ResultCode change_leaf_parent_key_insert(IndexNode* node, int changed_indx,
                                      PageNum page_num);
-    ReturnCode change_leaf_parent_key_delete(IndexNode* leaf, int delete_indx,
+    ResultCode change_leaf_parent_key_delete(IndexNode* leaf, int delete_indx,
                                      const char* old_first_key);
-    ReturnCode change_insert_leaf_link(IndexNode* left, IndexNode* right,
+    ResultCode change_insert_leaf_link(IndexNode* left, IndexNode* right,
                                PageNum right_page);
-    ReturnCode change_delete_leaf_link(IndexNode* left, IndexNode* right,
+    ResultCode change_delete_leaf_link(IndexNode* left, IndexNode* right,
                                PageNum right_page);
 
     protected:
@@ -264,28 +264,28 @@ class BplusTreeScanner {
      * compOp和*value指定比较符和比较值，indexScan为初始化后的索引扫描结构指针
      * 没有带两个边界的范围扫描
      */
-    ReturnCode open(CompOp comp_op, const char* value);
+    ResultCode open(CompOp comp_op, const char* value);
 
     /**
      * 用于继续索引扫描，获得下一个满足条件的索引项，
      * 并返回该索引项对应的记录的ID
      */
-    ReturnCode next_entry(RID* rid);
+    ResultCode next_entry(RID* rid);
 
     /**
      * 关闭一个索引扫描，释放相应的资源
      */
-    ReturnCode close();
+    ResultCode close();
 
     /**
      * 获取由fileName指定的B+树索引内容，返回指向B+树的指针。
      * 此函数提供给测试程序调用，用于检查B+树索引内容的正确性
      */
-    // ReturnCode getIndexTree(char *fileName, Tree *index);
+    // ResultCode getIndexTree(char *fileName, Tree *index);
 
     private:
-    ReturnCode   get_next_idx_in_memory(RID* rid);
-    ReturnCode   find_idx_pages();
+    ResultCode   get_next_idx_in_memory(RID* rid);
+    ResultCode   find_idx_pages();
     bool satisfy_condition(const char* key);
 
     private:

@@ -14,7 +14,7 @@ See the Mulan PSL v2 for more details. */
 #include <storage/common/index_meta.h>
 #include <common/lang/string.h>
 #include <common/log/log.h>
-#include <rc.h>
+#include <result_code.h>
 #include <storage/common/field_meta.h>
 #include <storage/common/table_meta.h>
 #include <json/json.h>
@@ -22,15 +22,15 @@ See the Mulan PSL v2 for more details. */
 const static Json::StaticString FIELD_NAME("name");
 const static Json::StaticString FIELD_FIELD_NAME("field_name");
 
-ReturnCode IndexMeta::init(const char* name, const FieldMeta& field) {
+ResultCode IndexMeta::init(const char* name, const FieldMeta& field) {
     if (common::is_blank(name)) {
         LOG_ERROR("Failed to init index, name is empty.");
-        return ReturnCode::INVALID_ARGUMENT;
+        return ResultCode::INVALID_ARGUMENT;
     }
 
     name_  = name;
     field_ = field.name();
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
 void IndexMeta::to_json(Json::Value& json_value) const {
@@ -38,27 +38,27 @@ void IndexMeta::to_json(Json::Value& json_value) const {
     json_value[FIELD_FIELD_NAME] = field_;
 }
 
-ReturnCode IndexMeta::from_json(const TableMeta& table, const Json::Value& json_value,
+ResultCode IndexMeta::from_json(const TableMeta& table, const Json::Value& json_value,
                         IndexMeta& index) {
     const Json::Value& name_value  = json_value[FIELD_NAME];
     const Json::Value& field_value = json_value[FIELD_FIELD_NAME];
     if (!name_value.isString()) {
         LOG_ERROR("Index name is not a string. json value=%s",
                   name_value.toStyledString().c_str());
-        return ReturnCode::GENERIC_ERROR;
+        return ResultCode::GENERIC_ERROR;
     }
 
     if (!field_value.isString()) {
         LOG_ERROR("Field name of index [%s] is not a string. json value=%s",
                   name_value.asCString(), field_value.toStyledString().c_str());
-        return ReturnCode::GENERIC_ERROR;
+        return ResultCode::GENERIC_ERROR;
     }
 
     const FieldMeta* field = table.field(field_value.asCString());
     if (nullptr == field) {
         LOG_ERROR("Deserialize index [%s]: no such field: %s",
                   name_value.asCString(), field_value.asCString());
-        return ReturnCode::SCHEMA_FIELD_MISSING;
+        return ResultCode::SCHEMA_FIELD_MISSING;
     }
 
     return index.init(name_value.asCString(), *field);

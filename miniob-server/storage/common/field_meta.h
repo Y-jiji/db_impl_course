@@ -16,7 +16,7 @@ See the Mulan PSL v2 for more details. */
 
 #include <string>
 
-#include <rc.h>
+#include <result_code.h>
 #include <sql/parser/parse_defs.h>
 
 namespace Json {
@@ -29,7 +29,7 @@ class FieldMeta {
     FieldMeta();
     ~FieldMeta() = default;
 
-    ReturnCode init(const char* name, AttrType attr_type, int attr_offset, int attr_len,
+    ResultCode init(const char* name, AttrType attr_type, int attr_offset, int attr_len,
             bool visible);
 
     public:
@@ -44,7 +44,7 @@ class FieldMeta {
 
     public:
     void      to_json(Json::Value& json_value) const;
-    static ReturnCode from_json(const Json::Value& json_value, FieldMeta& field);
+    static ResultCode from_json(const Json::Value& json_value, FieldMeta& field);
 
     protected:
     std::string name_;

@@ -39,12 +39,12 @@ Transaction::Transaction() {}
 
 Transaction::~Transaction() {}
 
-ReturnCode Transaction::insert_record(Table* table, Record* record) {
-    ReturnCode rc = ReturnCode::SUCCESS;
+ResultCode Transaction::insert_record(Table* table, Record* record) {
+    ResultCode rc = ResultCode::SUCCESS;
     // 先校验是否以前是否存在过(应该不会存在)
     Operation* old_oper = find_operation(table, record->rid);
     if (old_oper != nullptr) {
-        return ReturnCode::GENERIC_ERROR; // error code
+        return ResultCode::GENERIC_ERROR; // error code
     }
 
     start_if_not_started();
@@ -56,16 +56,16 @@ ReturnCode Transaction::insert_record(Table* table, Record* record) {
     return rc;
 }
 
-ReturnCode Transaction::delete_record(Table* table, Record* record) {
-    ReturnCode rc = ReturnCode::SUCCESS;
+ResultCode Transaction::delete_record(Table* table, Record* record) {
+    ResultCode rc = ResultCode::SUCCESS;
     start_if_not_started();
     Operation* old_oper = find_operation(table, record->rid);
     if (old_oper != nullptr) {
         if (old_oper->type() == Operation::Type::INSERT) {
             delete_operation(table, record->rid);
-            return ReturnCode::SUCCESS;
+            return ResultCode::SUCCESS;
         } else {
-            return ReturnCode::GENERIC_ERROR;
+            return ResultCode::GENERIC_ERROR;
         }
     }
     set_record_transaction_id(table, *record, transaction_id_, true);
@@ -131,8 +131,8 @@ void Transaction::delete_operation(Table* table, const RID& rid) {
     table_operations_iter->second.erase(tmp);
 }
 
-ReturnCode Transaction::commit() {
-    ReturnCode rc = ReturnCode::SUCCESS;
+ResultCode Transaction::commit() {
+    ResultCode rc = ResultCode::SUCCESS;
     for (const auto& table_operations : operations_) {
         Table*              table         = table_operations.first;
         const OperationSet& operation_set = table_operations.second;
@@ -145,7 +145,7 @@ ReturnCode Transaction::commit() {
             switch (operation.type()) {
             case Operation::Type::INSERT: {
                 rc = table->commit_insert(this, rid);
-                if (rc != ReturnCode::SUCCESS) {
+                if (rc != ResultCode::SUCCESS) {
                     // handle rc
                     LOG_ERROR("Failed to commit insert operation. rid=%d.%d, "
                               "rc=%d:%s",
@@ -154,7 +154,7 @@ ReturnCode Transaction::commit() {
             } break;
             case Operation::Type::DELETE: {
                 rc = table->commit_delete(this, rid);
-                if (rc != ReturnCode::SUCCESS) {
+                if (rc != ResultCode::SUCCESS) {
                     // handle rc
                     LOG_ERROR("Failed to commit delete operation. rid=%d.%d, "
                               "rc=%d:%s",
@@ -173,8 +173,8 @@ ReturnCode Transaction::commit() {
     return rc;
 }
 
-ReturnCode Transaction::rollback() {
-    ReturnCode rc = ReturnCode::SUCCESS;
+ResultCode Transaction::rollback() {
+    ResultCode rc = ResultCode::SUCCESS;
     for (const auto& table_operations : operations_) {
         Table*              table         = table_operations.first;
         const OperationSet& operation_set = table_operations.second;
@@ -187,7 +187,7 @@ ReturnCode Transaction::rollback() {
             switch (operation.type()) {
             case Operation::Type::INSERT: {
                 rc = table->rollback_insert(this, rid);
-                if (rc != ReturnCode::SUCCESS) {
+                if (rc != ResultCode::SUCCESS) {
                     // handle rc
                     LOG_ERROR("Failed to rollback insert operation. rid=%d.%d, "
                               "rc=%d:%s",
@@ -196,7 +196,7 @@ ReturnCode Transaction::rollback() {
             } break;
             case Operation::Type::DELETE: {
                 rc = table->rollback_delete(this, rid);
-                if (rc != ReturnCode::SUCCESS) {
+                if (rc != ResultCode::SUCCESS) {
                     // handle rc
                     LOG_ERROR("Failed to rollback delete operation. rid=%d.%d, "
                               "rc=%d:%s",
@@ -215,14 +215,14 @@ ReturnCode Transaction::rollback() {
     return rc;
 }
 
-ReturnCode Transaction::commit_insert(Table* table, Record& record) {
+ResultCode Transaction::commit_insert(Table* table, Record& record) {
     set_record_transaction_id(table, record, 0, false);
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
-ReturnCode Transaction::rollback_delete(Table* table, Record& record) {
+ResultCode Transaction::rollback_delete(Table* table, Record& record) {
     set_record_transaction_id(table, record, 0, false);
-    return ReturnCode::SUCCESS;
+    return ResultCode::SUCCESS;
 }
 
 bool Transaction::is_visible(Table* table, const Record* record) {

@@ -26,7 +26,7 @@ class ExecutionNode {
     ExecutionNode()                         = default;
     virtual ~ExecutionNode()                = default;
 
-    virtual ReturnCode execute(TupleSet& tuple_set) = 0;
+    virtual ResultCode execute(TupleSet& tuple_set) = 0;
 };
 
 class SelectExeNode : public ExecutionNode {
@@ -34,10 +34,10 @@ class SelectExeNode : public ExecutionNode {
     SelectExeNode();
     virtual ~SelectExeNode();
 
-    ReturnCode init(Transaction* transaction, Table* table, TupleSchema&& tuple_schema,
+    ResultCode init(Transaction* transaction, Table* table, TupleSchema&& tuple_schema,
             std::vector<DefaultConditionFilter*>&& condition_filters);
 
-    ReturnCode execute(TupleSet& tuple_set) override;
+    ResultCode execute(TupleSet& tuple_set) override;
 
     private:
     Transaction*                                 transaction_ = nullptr;

@@ -11,13 +11,13 @@ See the Mulan PSL v2 for more details. */
 // Created by Wangyunlai on 2021/5/14.
 //
 
-#include <rc.h>
+#include <result_code.h>
 
 #define RC_CASE_STRING(rc)                                                     \
     case rc:                                                                   \
         return #rc
 
-const char* strrc(ReturnCode rc) {
+const char* strrc(ResultCode rc) {
     switch (rc) {
         RC_CASE_STRING(SUCCESS);
         RC_CASE_STRING(GENERIC_ERROR);
