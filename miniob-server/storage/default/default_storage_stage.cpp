@@ -89,19 +89,19 @@ bool DefaultStorageStage::set_properties() {
     }
 
     handler_ = &DefaultHandler::get_default();
-    if (RC::SUCCESS != handler_->init(base_dir)) {
+    if (ReturnCode::SUCCESS != handler_->init(base_dir)) {
         LOG_ERROR("Failed to init default handler");
         return false;
     }
 
-    RC ret = handler_->create_db(sys_db);
-    if (ret != RC::SUCCESS && ret != RC::SCHEMA_DB_EXIST) {
+    ReturnCode ret = handler_->create_db(sys_db);
+    if (ret != ReturnCode::SUCCESS && ret != ReturnCode::SCHEMA_DB_EXIST) {
         LOG_ERROR("Failed to create system db");
         return false;
     }
 
     ret = handler_->open_db(sys_db);
-    if (ret != RC::SUCCESS) {
+    if (ret != ReturnCode::SUCCESS) {
         LOG_ERROR("Failed to open system db");
         return false;
     }
@@ -160,7 +160,7 @@ void DefaultStorageStage::handle_event(StageEvent* event) {
 
     Transaction*        current_transaction = session->current_transaction();
 
-    RC          rc          = RC::SUCCESS;
+    ReturnCode          rc          = ReturnCode::SUCCESS;
 
     char        response[256];
     switch (sql->flag) {
@@ -170,7 +170,7 @@ void DefaultStorageStage::handle_event(StageEvent* event) {
         rc = handler_->insert_record(current_transaction, current_db, table_name,
                                      inserts.value_num, inserts.values);
         snprintf(response, sizeof(response), "%s\n",
-                 rc == RC::SUCCESS ? "SUCCESS" : "FAILURE");
+                 rc == ReturnCode::SUCCESS ? "SUCCESS" : "FAILURE");
     } break;
     case SCF_UPDATE: {
         const Updates& updates       = sql->sstr.update;
@@ -181,7 +181,7 @@ void DefaultStorageStage::handle_event(StageEvent* event) {
             current_transaction, current_db, table_name, field_name, &updates.value,
             updates.condition_num, updates.conditions, &updated_count);
         snprintf(response, sizeof(response), "%s\n",
-                 rc == RC::SUCCESS ? "SUCCESS" : "FAILURE");
+                 rc == ReturnCode::SUCCESS ? "SUCCESS" : "FAILURE");
     } break;
     case SCF_DELETE: {
         const Deletes& deletes       = sql->sstr.deletion;
@@ -191,7 +191,7 @@ void DefaultStorageStage::handle_event(StageEvent* event) {
                                      deletes.condition_num, deletes.conditions,
                                      &deleted_count);
         snprintf(response, sizeof(response), "%s\n",
-                 rc == RC::SUCCESS ? "SUCCESS" : "FAILURE");
+                 rc == ReturnCode::SUCCESS ? "SUCCESS" : "FAILURE");
     } break;
     case SCF_CREATE_TABLE: { // create table
         const CreateTable& create_table = sql->sstr.create_table;
@@ -199,7 +199,7 @@ void DefaultStorageStage::handle_event(StageEvent* event) {
                                     create_table.attribute_count,
                                     create_table.attributes);
         snprintf(response, sizeof(response), "%s\n",
-                 rc == RC::SUCCESS ? "SUCCESS" : "FAILURE");
+                 rc == ReturnCode::SUCCESS ? "SUCCESS" : "FAILURE");
     } break;
 
     case SCF_DROP_TABLE: {
@@ -218,7 +218,7 @@ void DefaultStorageStage::handle_event(StageEvent* event) {
             current_transaction, current_db, create_index.relation_name,
             create_index.index_name, create_index.attribute_name);
         snprintf(response, sizeof(response), "%s\n",
-                 rc == RC::SUCCESS ? "SUCCESS" : "FAILURE");
+                 rc == ReturnCode::SUCCESS ? "SUCCESS" : "FAILURE");
     } break;
 
     case SCF_SHOW_TABLES: {
@@ -268,9 +268,9 @@ void DefaultStorageStage::handle_event(StageEvent* event) {
         break;
     }
 
-    if (rc == RC::SUCCESS && !session->is_transaction_multi_operation_mode()) {
+    if (rc == ReturnCode::SUCCESS && !session->is_transaction_multi_operation_mode()) {
         rc = current_transaction->commit();
-        if (rc != RC::SUCCESS) {
+        if (rc != ReturnCode::SUCCESS) {
             LOG_ERROR("Failed to commit transaction. rc=%d:%s", rc, strrc(rc));
         }
     }
@@ -298,7 +298,7 @@ void DefaultStorageStage::callback_event(StageEvent*      event,
  * @param errmsg 如果出现错误，通过这个参数返回错误信息
  * @return 成功返回RC::SUCCESS
  */
-RC insert_record_from_file(Table* table, std::vector<std::string>& file_values,
+ReturnCode insert_record_from_file(Table* table, std::vector<std::string>& file_values,
                            std::vector<Value>& record_values,
                            std::stringstream&  errmsg) {
 
@@ -306,13 +306,13 @@ RC insert_record_from_file(Table* table, std::vector<std::string>& file_values,
     const int sys_field_num = table->table_meta().sys_field_num();
 
     if (file_values.size() < record_values.size()) {
-        return RC::SCHEMA_FIELD_MISSING;
+        return ReturnCode::SCHEMA_FIELD_MISSING;
     }
 
-    RC                rc = RC::SUCCESS;
+    ReturnCode                rc = ReturnCode::SUCCESS;
 
     std::stringstream deserialize_stream;
-    for (int i = 0; i < field_num && RC::SUCCESS == rc; i++) {
+    for (int i = 0; i < field_num && ReturnCode::SUCCESS == rc; i++) {
         const FieldMeta* field = table->table_meta().field(i + sys_field_num);
 
         std::string&     file_value = file_values[i];
@@ -330,7 +330,7 @@ RC insert_record_from_file(Table* table, std::vector<std::string>& file_values,
                 errmsg << "need an integer but got '" << file_values[i]
                        << "' (field index:" << i << ")";
 
-                rc = RC::SCHEMA_FIELD_TYPE_MISMATCH;
+                rc = ReturnCode::SCHEMA_FIELD_TYPE_MISMATCH;
             } else {
                 value_init_integer(&record_values[i], int_value);
             }
@@ -346,7 +346,7 @@ RC insert_record_from_file(Table* table, std::vector<std::string>& file_values,
             if (!deserialize_stream || !deserialize_stream.eof()) {
                 errmsg << "need a float number but got '" << file_values[i]
                        << "'(field index:" << i << ")";
-                rc = RC::SCHEMA_FIELD_TYPE_MISMATCH;
+                rc = ReturnCode::SCHEMA_FIELD_TYPE_MISMATCH;
             } else {
                 value_init_float(&record_values[i], float_value);
             }
@@ -356,14 +356,14 @@ RC insert_record_from_file(Table* table, std::vector<std::string>& file_values,
         } break;
         default: {
             errmsg << "Unsupported field type to loading: " << field->type();
-            rc = RC::SCHEMA_FIELD_TYPE_MISMATCH;
+            rc = ReturnCode::SCHEMA_FIELD_TYPE_MISMATCH;
         } break;
         }
     }
 
-    if (RC::SUCCESS == rc) {
+    if (ReturnCode::SUCCESS == rc) {
         rc = table->insert_record(nullptr, field_num, record_values.data());
-        if (rc != RC::SUCCESS) {
+        if (rc != ReturnCode::SUCCESS) {
             errmsg << "insert failed.";
         }
     }
@@ -404,8 +404,8 @@ std::string DefaultStorageStage::load_data(const char* db_name,
     const std::string        delim("|");
     int                      line_num        = 0;
     int                      insertion_count = 0;
-    RC                       rc              = RC::SUCCESS;
-    while (!fs.eof() && RC::SUCCESS == rc) {
+    ReturnCode                       rc              = ReturnCode::SUCCESS;
+    while (!fs.eof() && ReturnCode::SUCCESS == rc) {
         std::getline(fs, line);
         line_num++;
         if (common::is_blank(line.c_str())) {
@@ -416,7 +416,7 @@ std::string DefaultStorageStage::load_data(const char* db_name,
         common::split_string(line, delim, file_values);
         std::stringstream errmsg;
         rc = insert_record_from_file(table, file_values, record_values, errmsg);
-        if (rc != RC::SUCCESS) {
+        if (rc != ReturnCode::SUCCESS) {
             result_string << "Line:" << line_num
                           << " insert record failed:" << errmsg.str()
                           << ". error:" << strrc(rc) << std::endl;
@@ -430,7 +430,7 @@ std::string DefaultStorageStage::load_data(const char* db_name,
     clock_gettime(CLOCK_MONOTONIC, &end_time);
     long cost_nano = (end_time.tv_sec - begin_time.tv_sec) * 1000000000L +
                      (end_time.tv_nsec - begin_time.tv_nsec);
-    if (RC::SUCCESS == rc) {
+    if (ReturnCode::SUCCESS == rc) {
         result_string << strrc(rc) << ". total " << line_num
                       << " line(s) handled and " << insertion_count
                       << " record(s) loaded, total cost "

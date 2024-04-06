@@ -80,14 +80,14 @@ class Transaction {
     ~Transaction();
 
     public:
-    RC   insert_record(Table* table, Record* record);
-    RC   delete_record(Table* table, Record* record);
+    ReturnCode   insert_record(Table* table, Record* record);
+    ReturnCode   delete_record(Table* table, Record* record);
 
-    RC   commit();
-    RC   rollback();
+    ReturnCode   commit();
+    ReturnCode   rollback();
 
-    RC   commit_insert(Table* table, Record& record);
-    RC   rollback_delete(Table* table, Record& record);
+    ReturnCode   commit_insert(Table* table, Record& record);
+    ReturnCode   rollback_delete(Table* table, Record& record);
 
     bool is_visible(Table* table, const Record* record);
 

@@ -16,20 +16,20 @@ See the Mulan PSL v2 for more details. */
 
 BplusTreeIndex::~BplusTreeIndex() noexcept { close(); }
 
-RC BplusTreeIndex::create(const char* file_name, const IndexMeta& index_meta,
+ReturnCode BplusTreeIndex::create(const char* file_name, const IndexMeta& index_meta,
                           const FieldMeta& field_meta) {
     if (inited_) {
         LOG_WARN("Failed to create index due to the index has been created "
                  "before. file_name:%s, index:%s, field:%s",
                  file_name, index_meta.name(), index_meta.field());
-        return RC::RECORD_OPENNED;
+        return ReturnCode::RECORD_OPENNED;
     }
 
     Index::init(index_meta, field_meta);
 
-    RC rc =
+    ReturnCode rc =
         index_handler_.create(file_name, field_meta.type(), field_meta.len());
-    if (RC::SUCCESS != rc) {
+    if (ReturnCode::SUCCESS != rc) {
         LOG_WARN("Failed to create index_handler, file_name:%s, index:%s, "
                  "field:%s, rc:%s",
                  file_name, index_meta.name(), index_meta.field(), strrc(rc));
@@ -39,22 +39,22 @@ RC BplusTreeIndex::create(const char* file_name, const IndexMeta& index_meta,
     inited_ = true;
     LOG_INFO("Successfully create index, file_name:%s, index:%s, field:%s",
              file_name, index_meta.name(), index_meta.field());
-    return RC::SUCCESS;
+    return ReturnCode::SUCCESS;
 }
 
-RC BplusTreeIndex::open(const char* file_name, const IndexMeta& index_meta,
+ReturnCode BplusTreeIndex::open(const char* file_name, const IndexMeta& index_meta,
                         const FieldMeta& field_meta) {
     if (inited_) {
         LOG_WARN("Failed to open index due to the index has been initedd "
                  "before. file_name:%s, index:%s, field:%s",
                  file_name, index_meta.name(), index_meta.field());
-        return RC::RECORD_OPENNED;
+        return ReturnCode::RECORD_OPENNED;
     }
 
     Index::init(index_meta, field_meta);
 
-    RC rc = index_handler_.open(file_name);
-    if (RC::SUCCESS != rc) {
+    ReturnCode rc = index_handler_.open(file_name);
+    if (ReturnCode::SUCCESS != rc) {
         LOG_WARN("Failed to open index_handler, file_name:%s, index:%s, "
                  "field:%s, rc:%s",
                  file_name, index_meta.name(), index_meta.field(), strrc(rc));
@@ -64,10 +64,10 @@ RC BplusTreeIndex::open(const char* file_name, const IndexMeta& index_meta,
     inited_ = true;
     LOG_INFO("Successfully open index, file_name:%s, index:%s, field:%s",
              file_name, index_meta.name(), index_meta.field());
-    return RC::SUCCESS;
+    return ReturnCode::SUCCESS;
 }
 
-RC BplusTreeIndex::close() {
+ReturnCode BplusTreeIndex::close() {
     if (inited_) {
         LOG_INFO("Begin to close index, file_id:%d, index:%s, field:%s",
                  index_handler_.get_file_id(), index_meta_.name(),
@@ -76,22 +76,22 @@ RC BplusTreeIndex::close() {
         inited_ = false;
     }
     LOG_INFO("Successfully close index.");
-    return RC::SUCCESS;
+    return ReturnCode::SUCCESS;
 }
 
-RC BplusTreeIndex::insert_entry(const char* record, const RID* rid) {
+ReturnCode BplusTreeIndex::insert_entry(const char* record, const RID* rid) {
     return index_handler_.insert_entry(record + field_meta_.offset(), rid);
 }
 
-RC BplusTreeIndex::delete_entry(const char* record, const RID* rid) {
+ReturnCode BplusTreeIndex::delete_entry(const char* record, const RID* rid) {
     return index_handler_.delete_entry(record + field_meta_.offset(), rid);
 }
 
 IndexScanner* BplusTreeIndex::create_scanner(CompOp      comp_op,
                                              const char* value) {
     BplusTreeScanner* bplus_tree_scanner = new BplusTreeScanner(index_handler_);
-    RC                rc = bplus_tree_scanner->open(comp_op, value);
-    if (rc != RC::SUCCESS) {
+    ReturnCode                rc = bplus_tree_scanner->open(comp_op, value);
+    if (rc != ReturnCode::SUCCESS) {
         LOG_WARN("Failed to open index scanner. file_id:%d, rc=%d:%s",
                  index_handler_.get_file_id(), rc, strrc(rc));
         delete bplus_tree_scanner;
@@ -103,7 +103,7 @@ IndexScanner* BplusTreeIndex::create_scanner(CompOp      comp_op,
     return index_scanner;
 }
 
-RC BplusTreeIndex::sync() { return index_handler_.sync(); }
+ReturnCode BplusTreeIndex::sync() { return index_handler_.sync(); }
 
 ////////////////////////////////////////////////////////////////////////////////
 BplusTreeIndexScanner::BplusTreeIndexScanner(BplusTreeScanner* tree_scanner)
@@ -114,11 +114,11 @@ BplusTreeIndexScanner::~BplusTreeIndexScanner() noexcept {
     delete tree_scanner_;
 }
 
-RC BplusTreeIndexScanner::next_entry(RID* rid) {
+ReturnCode BplusTreeIndexScanner::next_entry(RID* rid) {
     return tree_scanner_->next_entry(rid);
 }
 
-RC BplusTreeIndexScanner::destroy() {
+ReturnCode BplusTreeIndexScanner::destroy() {
     delete this;
-    return RC::SUCCESS;
+    return ReturnCode::SUCCESS;
 }

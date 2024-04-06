@@ -14,7 +14,7 @@ See the Mulan PSL v2 for more details. */
 #include <string.h>
 #include <string>
 
-#include <plan_cache_stage.h>
+#include <sql/plan_cache/plan_cache_stage.h>
 
 #include <common/conf/ini.h>
 #include <common/io/io.h>

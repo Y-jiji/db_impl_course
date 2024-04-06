@@ -11,9 +11,9 @@ See the Mulan PSL v2 for more details. */
 // Created by Meiyi & Wangyunlai on 2021/5/7.
 //
 
-#include <condition_filter.h>
+#include <storage/common/condition_filter.h>
 #include <common/log/log.h>
-#include <record_manager.h>
+#include <storage/common/record_manager.h>
 #include <storage/common/table.h>
 #include <stddef.h>
 
@@ -34,28 +34,28 @@ DefaultConditionFilter::DefaultConditionFilter() {
 }
 DefaultConditionFilter::~DefaultConditionFilter() {}
 
-RC DefaultConditionFilter::init(const ConDesc& left, const ConDesc& right,
+ReturnCode DefaultConditionFilter::init(const ConDesc& left, const ConDesc& right,
                                 AttrType attr_type, CompOp comp_op) {
     if (attr_type < CHARS || attr_type > FLOATS) {
         LOG_ERROR("Invalid condition with unsupported attribute type: %d",
                   attr_type);
-        return RC::INVALID_ARGUMENT;
+        return ReturnCode::INVALID_ARGUMENT;
     }
 
     if (comp_op < EQUAL_TO || comp_op >= NO_OP) {
         LOG_ERROR("Invalid condition with unsupported compare operation: %d",
                   comp_op);
-        return RC::INVALID_ARGUMENT;
+        return ReturnCode::INVALID_ARGUMENT;
     }
 
     left_      = left;
     right_     = right;
     attr_type_ = attr_type;
     comp_op_   = comp_op;
-    return RC::SUCCESS;
+    return ReturnCode::SUCCESS;
 }
 
-RC DefaultConditionFilter::init(Table& table, const Condition& condition) {
+ReturnCode DefaultConditionFilter::init(Table& table, const Condition& condition) {
     const TableMeta& table_meta = table.table_meta();
     ConDesc          left;
     ConDesc          right;
@@ -70,7 +70,7 @@ RC DefaultConditionFilter::init(Table& table, const Condition& condition) {
         if (nullptr == field_left) {
             LOG_WARN("No such field in condition. %s.%s", table.name(),
                      condition.left_attr.attribute_name);
-            return RC::SCHEMA_FIELD_MISSING;
+            return ReturnCode::SCHEMA_FIELD_MISSING;
         }
         left.attr_length = field_left->len();
         left.attr_offset = field_left->offset();
@@ -94,7 +94,7 @@ RC DefaultConditionFilter::init(Table& table, const Condition& condition) {
         if (nullptr == field_right) {
             LOG_WARN("No such field in condition. %s.%s", table.name(),
                      condition.right_attr.attribute_name);
-            return RC::SCHEMA_FIELD_MISSING;
+            return ReturnCode::SCHEMA_FIELD_MISSING;
         }
         right.attr_length = field_right->len();
         right.attr_offset = field_right->offset();
@@ -113,12 +113,12 @@ RC DefaultConditionFilter::init(Table& table, const Condition& condition) {
     // 校验和转换
     //  if (!field_type_compare_compatible_table[type_left][type_right]) {
     //    // 不能比较的两个字段， 要把信息传给客户端
-    //    return RC::SCHEMA_FIELD_TYPE_MISMATCH;
+    //    return ReturnCode::SCHEMA_FIELD_TYPE_MISMATCH;
     //  }
     // NOTE：这里没有实现不同类型的数据比较，比如整数跟浮点数之间的对比
     // 但是选手们还是要实现。这个功能在预选赛中会出现
     if (type_left != type_right) {
-        return RC::SCHEMA_FIELD_TYPE_MISMATCH;
+        return ReturnCode::SCHEMA_FIELD_TYPE_MISMATCH;
     }
 
     return init(left, right, type_left, condition.comp);
@@ -191,34 +191,34 @@ CompositeConditionFilter::~CompositeConditionFilter() {
     }
 }
 
-RC CompositeConditionFilter::init(const ConditionFilter* filters[],
+ReturnCode CompositeConditionFilter::init(const ConditionFilter* filters[],
                                   int filter_num, bool own_memory) {
     filters_      = filters;
     filter_num_   = filter_num;
     memory_owner_ = own_memory;
-    return RC::SUCCESS;
+    return ReturnCode::SUCCESS;
 }
-RC CompositeConditionFilter::init(const ConditionFilter* filters[],
+ReturnCode CompositeConditionFilter::init(const ConditionFilter* filters[],
                                   int                    filter_num) {
     return init(filters, filter_num, false);
 }
 
-RC CompositeConditionFilter::init(Table& table, const Condition* conditions,
+ReturnCode CompositeConditionFilter::init(Table& table, const Condition* conditions,
                                   int condition_num) {
     if (condition_num == 0) {
-        return RC::SUCCESS;
+        return ReturnCode::SUCCESS;
     }
     if (conditions == nullptr) {
-        return RC::INVALID_ARGUMENT;
+        return ReturnCode::INVALID_ARGUMENT;
     }
 
-    RC                rc                = RC::SUCCESS;
+    ReturnCode                rc                = ReturnCode::SUCCESS;
     ConditionFilter** condition_filters = new ConditionFilter*[condition_num];
     for (int i = 0; i < condition_num; i++) {
         DefaultConditionFilter* default_condition_filter =
             new DefaultConditionFilter();
         rc = default_condition_filter->init(table, conditions[i]);
-        if (rc != RC::SUCCESS) {
+        if (rc != ReturnCode::SUCCESS) {
             delete default_condition_filter;
             for (int j = i - 1; j >= 0; j--) {
                 delete condition_filters[j];

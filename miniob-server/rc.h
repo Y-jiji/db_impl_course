@@ -165,7 +165,7 @@ enum RCAuth {
     USER = 1,
 };
 
-enum RC {
+enum ReturnCode {
 
     SUCCESS = 0, /* Successful result */
     /* beginning-of-error-codes */
@@ -343,6 +343,6 @@ enum RC {
     AUTH_USER = (AUTH | (RCAuth::USER << 8)),
 };
 
-extern const char* strrc(RC rc);
+extern const char* strrc(ReturnCode rc);
 
 #endif //__OBSERVER_RC_H__

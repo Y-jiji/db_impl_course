@@ -28,12 +28,12 @@ class Db {
     Db() = default;
     ~Db();
 
-    RC          init(const char* name, const char* dbpath);
+    ReturnCode          init(const char* name, const char* dbpath);
 
-    RC          create_table(const char* table_name, int attribute_count,
+    ReturnCode          create_table(const char* table_name, int attribute_count,
                              const AttrInfo* attributes);
 
-    RC          drop_table(const char* table_name);
+    ReturnCode          drop_table(const char* table_name);
 
     Table*      find_table(const char* table_name) const;
 
@@ -41,10 +41,10 @@ class Db {
 
     void        all_tables(std::vector<std::string>& table_names) const;
 
-    RC          sync();
+    ReturnCode          sync();
 
     private:
-    RC open_all_tables();
+    ReturnCode open_all_tables();
 
     private:
     std::string                             name_;

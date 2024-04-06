@@ -4,7 +4,7 @@
 
 struct ParserContext;
 
-#include "yacc_sql.tab.h"
+#include <sql/parser/sql_yacc.tab.h>
 extern int atoi();
 extern double atof();
 

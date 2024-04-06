@@ -34,7 +34,7 @@ See the Mulan PSL v2 for more details. */
 
 using namespace common;
 
-RC create_selection_executor(Transaction* transaction, const Selects& selects, const char* db,
+ReturnCode create_selection_executor(Transaction* transaction, const Selects& selects, const char* db,
                              const char*    table_name,
                              SelectExeNode& select_node);
 
@@ -151,19 +151,19 @@ void ExecuteStage::handle_request(common::StageEvent* event) {
         default_storage_stage_->handle_event(storage_event);
     } break;
     case SCF_SYNC: {
-        RC rc = DefaultHandler::get_default().sync();
+        ReturnCode rc = DefaultHandler::get_default().sync();
         session_event->set_response(strrc(rc));
         exe_event->done_immediate();
     } break;
     case SCF_BEGIN: {
         session_event->get_client()->session->set_transaction_multi_operation_mode(
             true);
-        session_event->set_response(strrc(RC::SUCCESS));
+        session_event->set_response(strrc(ReturnCode::SUCCESS));
         exe_event->done_immediate();
     } break;
     case SCF_COMMIT: {
         Transaction* transaction = session_event->get_client()->session->current_transaction();
-        RC   rc  = transaction->commit();
+        ReturnCode   rc  = transaction->commit();
         session_event->get_client()->session->set_transaction_multi_operation_mode(
             false);
         session_event->set_response(strrc(rc));
@@ -171,7 +171,7 @@ void ExecuteStage::handle_request(common::StageEvent* event) {
     } break;
     case SCF_ROLLBACK: {
         Transaction* transaction = session_event->get_client()->session->current_transaction();
-        RC   rc  = transaction->rollback();
+        ReturnCode   rc  = transaction->rollback();
         session_event->get_client()->session->set_transaction_multi_operation_mode(
             false);
         session_event->set_response(strrc(rc));
@@ -216,10 +216,10 @@ void end_transaction_if_need(Session* session, Transaction* transaction, bool al
 // 这里没有对输入的某些信息做合法性校验，比如查询的列名、where条件中的列名等，没有做必要的合法性校验
 // 需要补充上这一部分.
 // 校验部分也可以放在resolve，不过跟execution放一起也没有关系
-RC ExecuteStage::do_select(const char* db, Query* sql,
+ReturnCode ExecuteStage::do_select(const char* db, Query* sql,
                            SessionEvent* session_event) {
 
-    RC             rc      = RC::SUCCESS;
+    ReturnCode             rc      = ReturnCode::SUCCESS;
     Session*       session = session_event->get_client()->session;
     Transaction*           transaction     = session->current_transaction();
     const Selects& selects = sql->sstr.selection;
@@ -231,7 +231,7 @@ RC ExecuteStage::do_select(const char* db, Query* sql,
         SelectExeNode* select_node = new SelectExeNode;
         rc = create_selection_executor(transaction, selects, db, table_name,
                                        *select_node);
-        if (rc != RC::SUCCESS) {
+        if (rc != ReturnCode::SUCCESS) {
             delete select_node;
             for (SelectExeNode*& tmp_node : select_nodes) {
                 delete tmp_node;
@@ -245,14 +245,14 @@ RC ExecuteStage::do_select(const char* db, Query* sql,
     if (select_nodes.empty()) {
         LOG_ERROR("No table given");
         end_transaction_if_need(session, transaction, false);
-        return RC::SQL_SYNTAX;
+        return ReturnCode::SQL_SYNTAX;
     }
 
     std::vector<TupleSet> tuple_sets;
     for (SelectExeNode*& node : select_nodes) {
         TupleSet tuple_set;
         rc = node->execute(tuple_set);
-        if (rc != RC::SUCCESS) {
+        if (rc != ReturnCode::SUCCESS) {
             for (SelectExeNode*& tmp_node : select_nodes) {
                 delete tmp_node;
             }
@@ -288,21 +288,21 @@ bool match_table(const Selects& selects, const char* table_name_in_condition,
     return selects.relation_num == 1;
 }
 
-static RC schema_add_field(Table* table, const char* field_name,
+static ReturnCode schema_add_field(Table* table, const char* field_name,
                            TupleSchema& schema) {
     const FieldMeta* field_meta = table->table_meta().field(field_name);
     if (nullptr == field_meta) {
         LOG_WARN("No such field. %s.%s", table->name(), field_name);
-        return RC::SCHEMA_FIELD_MISSING;
+        return ReturnCode::SCHEMA_FIELD_MISSING;
     }
 
     schema.add_if_not_exists(field_meta->type(), table->name(),
                              field_meta->name());
-    return RC::SUCCESS;
+    return ReturnCode::SUCCESS;
 }
 
 // 把所有的表和只跟这张表关联的condition都拿出来，生成最底层的select 执行节点
-RC create_selection_executor(Transaction* transaction, const Selects& selects, const char* db,
+ReturnCode create_selection_executor(Transaction* transaction, const Selects& selects, const char* db,
                              const char*    table_name,
                              SelectExeNode& select_node) {
     // 列出跟这张表关联的Attr
@@ -310,7 +310,7 @@ RC create_selection_executor(Transaction* transaction, const Selects& selects, c
     Table* table = DefaultHandler::get_default().find_table(db, table_name);
     if (nullptr == table) {
         LOG_WARN("No such table [%s] in db [%s]", table_name, db);
-        return RC::SCHEMA_TABLE_NOT_EXIST;
+        return ReturnCode::SCHEMA_TABLE_NOT_EXIST;
     }
 
     for (int i = selects.attr_num - 1; i >= 0; i--) {
@@ -323,8 +323,8 @@ RC create_selection_executor(Transaction* transaction, const Selects& selects, c
                 break; // 没有校验，给出* 之后，再写字段的错误
             } else {
                 // 列出这张表相关字段
-                RC rc = schema_add_field(table, attr.attribute_name, schema);
-                if (rc != RC::SUCCESS) {
+                ReturnCode rc = schema_add_field(table, attr.attribute_name, schema);
+                if (rc != ReturnCode::SUCCESS) {
                     return rc;
                 }
             }
@@ -351,8 +351,8 @@ RC create_selection_executor(Transaction* transaction, const Selects& selects, c
         ) {
             DefaultConditionFilter* condition_filter =
                 new DefaultConditionFilter();
-            RC rc = condition_filter->init(*table, condition);
-            if (rc != RC::SUCCESS) {
+            ReturnCode rc = condition_filter->init(*table, condition);
+            if (rc != ReturnCode::SUCCESS) {
                 delete condition_filter;
                 for (DefaultConditionFilter*& filter : condition_filters) {
                     delete filter;

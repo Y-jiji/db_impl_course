@@ -11,7 +11,7 @@ See the Mulan PSL v2 for more details. */
 // Created by Longda on 2021
 //
 
-#include <log_test.h>
+#include "log_test.h"
 
 #include <gtest/gtest.h>
 

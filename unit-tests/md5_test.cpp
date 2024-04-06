@@ -14,7 +14,7 @@ See the Mulan PSL v2 for more details. */
 #include <stdio.h>
 
 #include <common/math/md5.h>
-#include <md5_test.h>
+#include "md5_test.h"
 
 using namespace common;
 

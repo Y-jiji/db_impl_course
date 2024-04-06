@@ -37,7 +37,7 @@ class ExecuteStage : public common::Stage {
                         common::CallbackContext* context) override;
 
     void handle_request(common::StageEvent* event);
-    RC   do_select(const char* db, Query* sql, SessionEvent* session_event);
+    ReturnCode   do_select(const char* db, Query* sql, SessionEvent* session_event);
 
     protected:
 

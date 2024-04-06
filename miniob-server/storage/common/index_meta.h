@@ -28,7 +28,7 @@ class IndexMeta {
     public:
     IndexMeta() = default;
 
-    RC init(const char* name, const FieldMeta& field);
+    ReturnCode init(const char* name, const FieldMeta& field);
 
     public:
     const char* name() const;
@@ -38,7 +38,7 @@ class IndexMeta {
 
     public:
     void      to_json(Json::Value& json_value) const;
-    static RC from_json(const TableMeta& table, const Json::Value& json_value,
+    static ReturnCode from_json(const TableMeta& table, const Json::Value& json_value,
                         IndexMeta& index);
 
     protected:

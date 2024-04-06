@@ -161,7 +161,7 @@ typedef struct {
  * @param dbname
  * @return
  */
-RC createDB(char* dbpath, char* dbname);
+ReturnCode createDB(char* dbpath, char* dbname);
 
 /**
  * 删除一个数据库，dbName为要删除的数据库对应文件夹的路径名。
@@ -169,21 +169,21 @@ RC createDB(char* dbpath, char* dbname);
  * @param dbname
  * @return
  */
-RC dropDB(char* dbname);
+ReturnCode dropDB(char* dbname);
 
 /**
  * 改变系统的当前数据库为dbName对应的文件夹中的数据库。接口要求同dropDB
  * @param dbname
  * @return
  */
-RC openDB(char* dbname);
+ReturnCode openDB(char* dbname);
 
 /**
  * 关闭当前数据库。
  * 该操作将关闭当前数据库中打开的所有文件，关闭文件操作将自动使所有相关的缓冲区页面更新到磁盘
  * @return
  */
-RC closeDB();
+ReturnCode closeDB();
 
 /**
  * 执行一条除SELECT之外的SQL语句，如果执行成功，返回SUCCESS，否则返回错误码。
@@ -191,7 +191,7 @@ RC closeDB();
  * @param sql
  * @return
  */
-RC execute(char* sql);
+ReturnCode execute(char* sql);
 
 /**
  * 创建一个名为relName的表。
@@ -204,14 +204,14 @@ RC execute(char* sql);
  * @param attributes
  * @return
  */
-RC createTable(char* relName, int attrCount, AttrInfo* attributes);
+ReturnCode createTable(char* relName, int attrCount, AttrInfo* attributes);
 
 /**
  * 销毁名为relName的表以及在该表上建立的所有索引
  * @param relName
  * @return
  */
-RC dropTable(char* relName);
+ReturnCode dropTable(char* relName);
 
 /**
  * 该函数在关系relName的属性attrName上创建名为indexName的索引。
@@ -225,7 +225,7 @@ RC dropTable(char* relName);
  * @param attrName
  * @return
  */
-RC createIndex(char* indexName, char* relName, char* attrName);
+ReturnCode createIndex(char* indexName, char* relName, char* attrName);
 
 /**
  * 该函数用来删除名为indexName的索引。
@@ -233,7 +233,7 @@ RC createIndex(char* indexName, char* relName, char* attrName);
  * @param indexName
  * @return
  */
-RC dropIndex(char* indexName);
+ReturnCode dropIndex(char* indexName);
 
 /**
  * 该函数用来在relName表中插入具有指定属性值的新元组，
@@ -245,7 +245,7 @@ RC dropIndex(char* indexName);
  * @param values
  * @return
  */
-RC insertRecord(char* relName, int nValues, Value* values);
+ReturnCode insertRecord(char* relName, int nValues, Value* values);
 
 /**
  * 该函数用来删除relName表中所有满足指定条件的元组以及该元组对应的索引项。
@@ -256,7 +256,7 @@ RC insertRecord(char* relName, int nValues, Value* values);
  * @param conditions
  * @return
  */
-RC deleteRecord(char* relName, int nConditions, Condition* conditions);
+ReturnCode deleteRecord(char* relName, int nConditions, Condition* conditions);
 
 /**
  * 该函数用于更新relName表中所有满足指定条件的元组，
@@ -270,7 +270,7 @@ RC deleteRecord(char* relName, int nConditions, Condition* conditions);
  * @param conditions
  * @return
  */
-RC updateRecord(char* relName, char* attrName, Value* value, int nConditions,
+ReturnCode updateRecord(char* relName, char* attrName, Value* value, int nConditions,
                 Condition* conditions);
 
 #endif //__OBSERVER_HANDLER_HANDLER_H__

@@ -44,6 +44,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS true)
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
+find_package(BISON   REQUIRED)
+find_package(FLEX    REQUIRED)
 
 # -- when debug is enabled -- #
 if(DEBUG OR ENV{DEBUG})
@@ -66,7 +68,7 @@ else()
 endif()
 
 # -- configure common lib build command -- #
-file(GLOB_RECURSE SRC common/*.cpp)
+file(GLOB_RECURSE SRC common/*.cpp common/*.c)
 file(GLOB_RECURSE INC common/*.h)
 
 foreach(F ${INC})
@@ -80,8 +82,8 @@ target_include_directories(common PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/include)
 
 # -- configure server build command -- #
 
-file(GLOB_RECURSE SRC miniob-server/*.cpp miniob-server/*.c)
-file(GLOB_RECURSE INC miniob-server/*.hpp miniob-server/*.h)
+file(GLOB_RECURSE SRC miniob-server/*.cpp)
+file(GLOB_RECURSE INC miniob-server/*.h)
 
 foreach(F ${INC})
     file(RELATIVE_PATH REL ${CMAKE_CURRENT_SOURCE_DIR}/miniob-server ${F})
@@ -89,13 +91,29 @@ foreach(F ${INC})
     unset(REL)
 endforeach()
 
-add_executable(miniob-server ${SRC})
+bison_target(sql_parser 
+    miniob-server/sql/parser/sql_yacc.y
+    ${CMAKE_CURRENT_BINARY_DIR}/miniob-server-headers/sql/parser/sql_yacc.tab.c
+    DEFINES_FILE 
+    ${CMAKE_CURRENT_BINARY_DIR}/miniob-server-headers/sql/parser/sql_yacc.tab.h
+)
+
+flex_target(sql_scanner
+    miniob-server/sql/parser/sql_lex.l
+    ${CMAKE_CURRENT_BINARY_DIR}/miniob-server-headers/sql/parser/sql_lex.c
+    DEFINES_FILE
+    ${CMAKE_CURRENT_BINARY_DIR}/miniob-server-headers/sql/parser/sql_lex.h
+)
+
+ADD_FLEX_BISON_DEPENDENCY(sql_scanner sql_parser)
+
+add_executable(miniob-server ${SRC} ${BISON_sql_parser_OUTPUTS} ${FLEX_sql_scanner_OUTPUTS})
 target_link_libraries(miniob-server PUBLIC event jsoncpp_static dl Threads::Threads common)
 target_include_directories(miniob-server PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/miniob-server-headers)
 
-# add_library(miniob-server-lib STATIC ${SRC}) # this library is created for unittests
-# target_link_libraries(miniob-server-lib PUBLIC event jsoncpp_static dl Threads::Threads common)
-# target_include_directories(miniob-server-lib PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/miniob-server-headers)
+add_library(miniob-server-lib STATIC ${SRC} ${BISON_sql_parser_OUTPUTS} ${FLEX_sql_scanner_OUTPUTS}) # this library is created for unittests
+target_link_libraries(miniob-server-lib PUBLIC event jsoncpp_static dl Threads::Threads common)
+target_include_directories(miniob-server-lib PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/miniob-server-headers)
 
 # -- configure client build command -- #
 
@@ -103,7 +121,6 @@ file(GLOB_RECURSE SRC miniob-client/*.cpp)
 
 add_executable(miniob-client ${SRC})
 target_link_libraries(miniob-client common Threads::Threads dl)
-
 
 # -- configure test build command -- #
 file(GLOB_RECURSE SRC tests/*.cpp)

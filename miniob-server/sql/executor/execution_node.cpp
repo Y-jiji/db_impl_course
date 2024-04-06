@@ -24,21 +24,21 @@ SelectExeNode::~SelectExeNode() {
     condition_filters_.clear();
 }
 
-RC SelectExeNode::init(
+ReturnCode SelectExeNode::init(
     Transaction* transaction, Table* table, TupleSchema&& tuple_schema,
     std::vector<DefaultConditionFilter*>&& condition_filters) {
     transaction_               = transaction;
     table_             = table;
     tuple_schema_      = tuple_schema;
     condition_filters_ = std::move(condition_filters);
-    return RC::SUCCESS;
+    return ReturnCode::SUCCESS;
 }
 
 void record_reader(const char* data, void* context) {
     TupleRecordConverter* converter = (TupleRecordConverter*)context;
     converter->add_record(data);
 }
-RC SelectExeNode::execute(TupleSet& tuple_set) {
+ReturnCode SelectExeNode::execute(TupleSet& tuple_set) {
     CompositeConditionFilter condition_filter;
     condition_filter.init((const ConditionFilter**)condition_filters_.data(),
                           condition_filters_.size());

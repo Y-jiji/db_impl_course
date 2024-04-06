@@ -40,7 +40,7 @@ class Table {
      * @param attribute_count 字段个数
      * @param attributes 字段
      */
-    RC create(const char* path, const char* name, const char* base_dir,
+    ReturnCode create(const char* path, const char* name, const char* base_dir,
               int attribute_count, const AttrInfo attributes[]);
 
     /**
@@ -48,18 +48,18 @@ class Table {
      * @param meta_file 保存表元数据的文件完整路径
      * @param base_dir 表所在的文件夹，表记录数据文件、索引数据文件存放位置
      */
-    RC open(const char* meta_file, const char* base_dir);
-    RC destroy(const char* dir);
-    RC insert_record(Transaction* transaction, int value_num, const Value* values);
-    RC update_record(Transaction* transaction, const char* attribute_name, const Value* value,
+    ReturnCode open(const char* meta_file, const char* base_dir);
+    ReturnCode destroy(const char* dir);
+    ReturnCode insert_record(Transaction* transaction, int value_num, const Value* values);
+    ReturnCode update_record(Transaction* transaction, const char* attribute_name, const Value* value,
                      int condition_num, const Condition conditions[],
                      int* updated_count);
-    RC delete_record(Transaction* transaction, ConditionFilter* filter, int* deleted_count);
+    ReturnCode delete_record(Transaction* transaction, ConditionFilter* filter, int* deleted_count);
 
-    RC scan_record(Transaction* transaction, ConditionFilter* filter, int limit, void* context,
+    ReturnCode scan_record(Transaction* transaction, ConditionFilter* filter, int limit, void* context,
                    void (*record_reader)(const char* data, void* context));
 
-    RC create_index(Transaction* transaction, const char* index_name,
+    ReturnCode create_index(Transaction* transaction, const char* index_name,
                     const char* attribute_name);
 
     public:
@@ -67,37 +67,37 @@ class Table {
 
     const TableMeta& table_meta() const;
 
-    RC               sync();
+    ReturnCode               sync();
 
     public:
-    RC commit_insert(Transaction* transaction, const RID& rid);
-    RC commit_delete(Transaction* transaction, const RID& rid);
-    RC rollback_insert(Transaction* transaction, const RID& rid);
-    RC rollback_delete(Transaction* transaction, const RID& rid);
+    ReturnCode commit_insert(Transaction* transaction, const RID& rid);
+    ReturnCode commit_delete(Transaction* transaction, const RID& rid);
+    ReturnCode rollback_insert(Transaction* transaction, const RID& rid);
+    ReturnCode rollback_delete(Transaction* transaction, const RID& rid);
 
     private:
-    RC scan_record(Transaction* transaction, ConditionFilter* filter, int limit, void* context,
-                   RC (*record_reader)(Record* record, void* context));
-    RC scan_record_by_index(Transaction* transaction, IndexScanner* scanner,
+    ReturnCode scan_record(Transaction* transaction, ConditionFilter* filter, int limit, void* context,
+                   ReturnCode (*record_reader)(Record* record, void* context));
+    ReturnCode scan_record_by_index(Transaction* transaction, IndexScanner* scanner,
                             ConditionFilter* filter, int limit, void* context,
-                            RC (*record_reader)(Record* record, void* context));
+                            ReturnCode (*record_reader)(Record* record, void* context));
     IndexScanner* find_index_for_scan(const ConditionFilter* filter);
     IndexScanner* find_index_for_scan(const DefaultConditionFilter& filter);
 
-    RC            insert_record(Transaction* transaction, Record* record);
-    RC            delete_record(Transaction* transaction, Record* record);
+    ReturnCode            insert_record(Transaction* transaction, Record* record);
+    ReturnCode            delete_record(Transaction* transaction, Record* record);
 
     private:
     friend class RecordUpdater;
     friend class RecordDeleter;
 
-    RC insert_entry_of_indexes(const char* record, const RID& rid);
-    RC delete_entry_of_indexes(const char* record, const RID& rid,
+    ReturnCode insert_entry_of_indexes(const char* record, const RID& rid);
+    ReturnCode delete_entry_of_indexes(const char* record, const RID& rid,
                                bool error_on_not_exists);
 
     private:
-    RC init_record_handler(const char* base_dir);
-    RC make_record(int value_num, const Value* values, char*& record_out);
+    ReturnCode init_record_handler(const char* base_dir);
+    ReturnCode make_record(int value_num, const Value* values, char*& record_out);
 
     private:
     Index* find_index(const char* index_name) const;

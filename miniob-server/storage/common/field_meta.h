@@ -29,7 +29,7 @@ class FieldMeta {
     FieldMeta();
     ~FieldMeta() = default;
 
-    RC init(const char* name, AttrType attr_type, int attr_offset, int attr_len,
+    ReturnCode init(const char* name, AttrType attr_type, int attr_offset, int attr_len,
             bool visible);
 
     public:
@@ -44,7 +44,7 @@ class FieldMeta {
 
     public:
     void      to_json(Json::Value& json_value) const;
-    static RC from_json(const Json::Value& json_value, FieldMeta& field);
+    static ReturnCode from_json(const Json::Value& json_value, FieldMeta& field);
 
     protected:
     std::string name_;

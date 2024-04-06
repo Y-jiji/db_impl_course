@@ -26,7 +26,7 @@ class DefaultHandler {
 
     virtual ~DefaultHandler() noexcept;
 
-    RC   init(const char* base_dir);
+    ReturnCode   init(const char* base_dir);
     void destroy();
 
     /**
@@ -37,7 +37,7 @@ class DefaultHandler {
      * @param dbname
      * @return
      */
-    RC create_db(const char* dbname);
+    ReturnCode create_db(const char* dbname);
 
     /**
      * 删除一个数据库，dbName为要删除的数据库对应文件夹的路径名。
@@ -45,21 +45,21 @@ class DefaultHandler {
      * @param dbname
      * @return
      */
-    RC drop_db(const char* dbname);
+    ReturnCode drop_db(const char* dbname);
 
     /**
      * 改变系统的当前数据库为dbName对应的文件夹中的数据库。接口要求同dropDB
      * @param dbname
      * @return
      */
-    RC open_db(const char* dbname);
+    ReturnCode open_db(const char* dbname);
 
     /**
      * 关闭当前数据库。
      * 该操作将关闭当前数据库中打开的所有文件，关闭文件操作将自动使所有相关的缓冲区页面更新到磁盘
      * @return
      */
-    RC close_db(const char* dbname);
+    ReturnCode close_db(const char* dbname);
 
     /**
      * 执行一条除SELECT之外的SQL语句，如果执行成功，返回SUCCESS，否则返回错误码。
@@ -67,7 +67,7 @@ class DefaultHandler {
      * @param sql
      * @return
      */
-    RC execute(const char* sql);
+    ReturnCode execute(const char* sql);
 
     /**
      * 创建一个名为relName的表。
@@ -80,7 +80,7 @@ class DefaultHandler {
      * @param attributes
      * @return
      */
-    RC create_table(const char* dbname, const char* relation_name,
+    ReturnCode create_table(const char* dbname, const char* relation_name,
                     int attribute_count, const AttrInfo* attributes);
 
     /**
@@ -88,7 +88,7 @@ class DefaultHandler {
      * @param relName
      * @return
      */
-    RC drop_table(const char* dbname, const char* relation_name);
+    ReturnCode drop_table(const char* dbname, const char* relation_name);
 
     /**
      * 该函数在关系relName的属性attrName上创建名为indexName的索引。
@@ -102,7 +102,7 @@ class DefaultHandler {
      * @param attrName
      * @return
      */
-    RC create_index(Transaction* transaction, const char* dbname, const char* relation_name,
+    ReturnCode create_index(Transaction* transaction, const char* dbname, const char* relation_name,
                     const char* index_name, const char* attribute_name);
 
     /**
@@ -111,7 +111,7 @@ class DefaultHandler {
      * @param index_name
      * @return
      */
-    RC drop_index(Transaction* transaction, const char* dbname, const char* relation_name,
+    ReturnCode drop_index(Transaction* transaction, const char* dbname, const char* relation_name,
                   const char* index_name);
 
     /**
@@ -124,7 +124,7 @@ class DefaultHandler {
      * @param values
      * @return
      */
-    RC insert_record(Transaction* transaction, const char* dbname, const char* relation_name,
+    ReturnCode insert_record(Transaction* transaction, const char* dbname, const char* relation_name,
                      int value_num, const Value* values);
 
     /**
@@ -136,7 +136,7 @@ class DefaultHandler {
      * @param conditions
      * @return
      */
-    RC delete_record(Transaction* transaction, const char* dbname, const char* relation_name,
+    ReturnCode delete_record(Transaction* transaction, const char* dbname, const char* relation_name,
                      int condition_num, const Condition* conditions,
                      int* deleted_count);
 
@@ -152,7 +152,7 @@ class DefaultHandler {
      * @param conditions
      * @return
      */
-    RC update_record(Transaction* transaction, const char* dbname, const char* relation_name,
+    ReturnCode update_record(Transaction* transaction, const char* dbname, const char* relation_name,
                      const char* attribute_name, const Value* value,
                      int condition_num, const Condition* conditions,
                      int* updated_count);
@@ -161,7 +161,7 @@ class DefaultHandler {
     Db*    find_db(const char* dbname) const;
     Table* find_table(const char* dbname, const char* table_name) const;
 
-    RC     sync();
+    ReturnCode     sync();
 
     public:
     static DefaultHandler& get_default();

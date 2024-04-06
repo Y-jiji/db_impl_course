@@ -14,7 +14,7 @@ See the Mulan PSL v2 for more details. */
 #include <string.h>
 #include <string>
 
-#include <parse_stage.h>
+#include <sql/parser/parse_stage.h>
 
 #include <common/conf/ini.h>
 #include <common/io/io.h>
@@ -119,8 +119,8 @@ StageEvent* ParseStage::handle_request(StageEvent* event) {
         return nullptr;
     }
 
-    RC ret = parse(sql.c_str(), result);
-    if (ret != RC::SUCCESS) {
+    ReturnCode ret = parse(sql.c_str(), result);
+    if (ret != ReturnCode::SUCCESS) {
         // set error information to event
         const char* error = result->sstr.errors != nullptr ? result->sstr.errors
                                                            : "Unknown error";

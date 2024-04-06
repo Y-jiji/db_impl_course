@@ -52,8 +52,8 @@ void              test_insert() {
             } else {
                 LOG_INFO("Insert %d", i);
             }
-            RC rc = handler->insert_entry((const char*)&i, &rid);
-            ASSERT_EQ(RC::SUCCESS, rc);
+            ReturnCode rc = handler->insert_entry((const char*)&i, &rid);
+            ASSERT_EQ(ReturnCode::SUCCESS, rc);
             ASSERT_EQ(true, handler->validate_tree());
         }
     }
@@ -73,8 +73,8 @@ void              test_insert() {
             } else {
                 LOG_INFO("Insert %d", i);
             }
-            RC rc = handler->insert_entry((const char*)&i, &rid);
-            ASSERT_EQ(RC::SUCCESS, rc);
+            ReturnCode rc = handler->insert_entry((const char*)&i, &rid);
+            ASSERT_EQ(ReturnCode::SUCCESS, rc);
             ASSERT_EQ(true, handler->validate_tree());
         }
     }
@@ -94,8 +94,8 @@ void              test_insert() {
             } else {
                 LOG_INFO("Insert %d", i);
             }
-            RC rc = handler->insert_entry((const char*)&i, &rid);
-            ASSERT_EQ(RC::SUCCESS, rc);
+            ReturnCode rc = handler->insert_entry((const char*)&i, &rid);
+            ASSERT_EQ(ReturnCode::SUCCESS, rc);
             ASSERT_EQ(true, handler->validate_tree());
         }
     }
@@ -119,12 +119,12 @@ void              test_insert() {
         } else {
             LOG_INFO("Check duplicate insert %d", i);
         }
-        RC  rc = handler->insert_entry((const char*)&i, &rid);
+        ReturnCode  rc = handler->insert_entry((const char*)&i, &rid);
         int t  = i % TIMES;
         if (t == 0 || t == 1 || t == 2) {
-            ASSERT_EQ(RC::RECORD_DUPLICATE_KEY, rc);
+            ASSERT_EQ(ReturnCode::RECORD_DUPLICATE_KEY, rc);
         } else {
-            ASSERT_EQ(RC::SUCCESS, rc);
+            ASSERT_EQ(ReturnCode::SUCCESS, rc);
             ASSERT_EQ(true, handler->validate_tree());
         }
     }
@@ -146,9 +146,9 @@ void test_get() {
         }
 
         rids.clear();
-        RC rc = handler->get_entry((const char*)&i, rids);
+        ReturnCode rc = handler->get_entry((const char*)&i, rids);
 
-        ASSERT_EQ(RC::SUCCESS, rc);
+        ASSERT_EQ(ReturnCode::SUCCESS, rc);
         ASSERT_EQ(1, rids.size());
         check_rid = rids.front();
         ASSERT_EQ(rid.page_num, check_rid.page_num);
@@ -175,10 +175,10 @@ void test_delete() {
                          rid.to_string().c_str());
             }
 
-            RC rc = handler->delete_entry((const char*)&i, &rid);
+            ReturnCode rc = handler->delete_entry((const char*)&i, &rid);
 
             ASSERT_EQ(true, handler->validate_tree());
-            ASSERT_EQ(RC::SUCCESS, rc);
+            ASSERT_EQ(ReturnCode::SUCCESS, rc);
         }
     }
 
@@ -199,10 +199,10 @@ void test_delete() {
                 LOG_INFO("Begin to delete entry of index,  rid: %s",
                          rid.to_string().c_str());
             }
-            RC rc = handler->delete_entry((const char*)&i, &rid);
+            ReturnCode rc = handler->delete_entry((const char*)&i, &rid);
 
             ASSERT_EQ(true, handler->validate_tree());
-            ASSERT_EQ(RC::SUCCESS, rc);
+            ASSERT_EQ(ReturnCode::SUCCESS, rc);
         }
     }
     handler->print_tree();
@@ -220,8 +220,8 @@ void test_delete() {
                      rid.to_string().c_str());
         }
         rids.clear();
-        RC rc = handler->get_entry((const char*)&i, rids);
-        ASSERT_EQ(RC::SUCCESS, rc);
+        ReturnCode rc = handler->get_entry((const char*)&i, rids);
+        ASSERT_EQ(ReturnCode::SUCCESS, rc);
         int t = i % TIMES;
         if (t == 0 || t == 1) {
             ASSERT_EQ(0, rids.size());
@@ -250,10 +250,10 @@ void test_delete() {
                 LOG_INFO("Begin to delete entry of index,  rid: %s",
                          rid.to_string().c_str());
             }
-            RC rc = handler->delete_entry((const char*)&i, &rid);
+            ReturnCode rc = handler->delete_entry((const char*)&i, &rid);
 
             ASSERT_EQ(true, handler->validate_tree());
-            ASSERT_EQ(RC::SUCCESS, rc);
+            ASSERT_EQ(ReturnCode::SUCCESS, rc);
         }
     }
 
@@ -274,10 +274,10 @@ void test_delete() {
                 LOG_INFO("Begin to delete entry of index,  rid: %s",
                          rid.to_string().c_str());
             }
-            RC rc = handler->delete_entry((const char*)&i, &rid);
+            ReturnCode rc = handler->delete_entry((const char*)&i, &rid);
 
             ASSERT_EQ(true, handler->validate_tree());
-            ASSERT_EQ(RC::SUCCESS, rc);
+            ASSERT_EQ(ReturnCode::SUCCESS, rc);
         }
     }
 
@@ -295,13 +295,13 @@ void test_delete() {
             LOG_INFO("Begin to insert entry of index,  rid: %s",
                      rid.to_string().c_str());
         }
-        RC  rc = handler->insert_entry((const char*)&i, &rid);
+        ReturnCode  rc = handler->insert_entry((const char*)&i, &rid);
         int t  = i % TIMES;
         if (t == 0 || t == 1 || t == 2) {
-            ASSERT_EQ(RC::SUCCESS, rc);
+            ASSERT_EQ(ReturnCode::SUCCESS, rc);
             ASSERT_EQ(true, handler->validate_tree());
         } else {
-            ASSERT_EQ(RC::RECORD_DUPLICATE_KEY, rc);
+            ASSERT_EQ(ReturnCode::RECORD_DUPLICATE_KEY, rc);
         }
     }
     handler->print_tree();

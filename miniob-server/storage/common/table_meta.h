@@ -31,9 +31,9 @@ class TableMeta : public common::Serializable {
 
     void swap(TableMeta& other) noexcept;
 
-    RC   init(const char* name, int field_num, const AttrInfo attributes[]);
+    ReturnCode   init(const char* name, int field_num, const AttrInfo attributes[]);
 
-    RC   add_index(const IndexMeta& index);
+    ReturnCode   add_index(const IndexMeta& index);
 
     public:
     const char*      name() const;
@@ -59,7 +59,7 @@ class TableMeta : public common::Serializable {
     void desc(std::ostream& os) const;
 
     protected:
-    static RC init_sys_fields();
+    static ReturnCode init_sys_fields();
 
     protected:
     std::string            name_;

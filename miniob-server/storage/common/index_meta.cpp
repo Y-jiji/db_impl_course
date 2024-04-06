@@ -22,15 +22,15 @@ See the Mulan PSL v2 for more details. */
 const static Json::StaticString FIELD_NAME("name");
 const static Json::StaticString FIELD_FIELD_NAME("field_name");
 
-RC IndexMeta::init(const char* name, const FieldMeta& field) {
+ReturnCode IndexMeta::init(const char* name, const FieldMeta& field) {
     if (common::is_blank(name)) {
         LOG_ERROR("Failed to init index, name is empty.");
-        return RC::INVALID_ARGUMENT;
+        return ReturnCode::INVALID_ARGUMENT;
     }
 
     name_  = name;
     field_ = field.name();
-    return RC::SUCCESS;
+    return ReturnCode::SUCCESS;
 }
 
 void IndexMeta::to_json(Json::Value& json_value) const {
@@ -38,27 +38,27 @@ void IndexMeta::to_json(Json::Value& json_value) const {
     json_value[FIELD_FIELD_NAME] = field_;
 }
 
-RC IndexMeta::from_json(const TableMeta& table, const Json::Value& json_value,
+ReturnCode IndexMeta::from_json(const TableMeta& table, const Json::Value& json_value,
                         IndexMeta& index) {
     const Json::Value& name_value  = json_value[FIELD_NAME];
     const Json::Value& field_value = json_value[FIELD_FIELD_NAME];
     if (!name_value.isString()) {
         LOG_ERROR("Index name is not a string. json value=%s",
                   name_value.toStyledString().c_str());
-        return RC::GENERIC_ERROR;
+        return ReturnCode::GENERIC_ERROR;
     }
 
     if (!field_value.isString()) {
         LOG_ERROR("Field name of index [%s] is not a string. json value=%s",
                   name_value.asCString(), field_value.toStyledString().c_str());
-        return RC::GENERIC_ERROR;
+        return ReturnCode::GENERIC_ERROR;
     }
 
     const FieldMeta* field = table.field(field_value.asCString());
     if (nullptr == field) {
         LOG_ERROR("Deserialize index [%s]: no such field: %s",
                   name_value.asCString(), field_value.asCString());
-        return RC::SCHEMA_FIELD_MISSING;
+        return ReturnCode::SCHEMA_FIELD_MISSING;
     }
 
     return index.init(name_value.asCString(), *field);

@@ -14,7 +14,7 @@ See the Mulan PSL v2 for more details. */
 #include <string.h>
 #include <string>
 
-#include <resolve_stage.h>
+#include <sql/parser/resolve_stage.h>
 
 #include <common/conf/ini.h>
 #include <common/io/io.h>

@@ -39,15 +39,15 @@ class Index {
 
     const IndexMeta&      index_meta() const { return index_meta_; }
 
-    virtual RC            insert_entry(const char* record, const RID* rid)  = 0;
-    virtual RC            delete_entry(const char* record, const RID* rid)  = 0;
+    virtual ReturnCode            insert_entry(const char* record, const RID* rid)  = 0;
+    virtual ReturnCode            delete_entry(const char* record, const RID* rid)  = 0;
 
     virtual IndexScanner* create_scanner(CompOp comp_op, const char* value) = 0;
 
-    virtual RC            sync()                                            = 0;
+    virtual ReturnCode            sync()                                            = 0;
 
     protected:
-    RC init(const IndexMeta& index_meta, const FieldMeta& field_meta);
+    ReturnCode init(const IndexMeta& index_meta, const FieldMeta& field_meta);
 
     protected:
     IndexMeta index_meta_;
@@ -59,8 +59,8 @@ class IndexScanner {
     IndexScanner()                  = default;
     virtual ~IndexScanner()         = default;
 
-    virtual RC next_entry(RID* rid) = 0;
-    virtual RC destroy()            = 0;
+    virtual ReturnCode next_entry(RID* rid) = 0;
+    virtual ReturnCode destroy()            = 0;
 };
 
 #endif // __OBSERVER_STORAGE_COMMON_INDEX_H_

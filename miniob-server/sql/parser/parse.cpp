@@ -16,7 +16,7 @@ See the Mulan PSL v2 for more details. */
 #include <rc.h>
 #include <mutex>
 
-RC parse(char* st, Query* sqln);
+ReturnCode parse(char* st, Query* sqln);
 
 #ifdef __cplusplus
 extern "C" {
@@ -369,7 +369,7 @@ void query_destroy(Query* query) {
 
 extern "C" int sql_parse(const char* st, Query* sqls);
 
-RC             parse(const char* st, Query* sqln) {
+ReturnCode             parse(const char* st, Query* sqln) {
     sql_parse(st, sqln);
 
     if (sqln->flag == SCF_ERROR)

@@ -14,7 +14,7 @@ See the Mulan PSL v2 for more details. */
 #include <string.h>
 #include <string>
 
-#include <mem_storage_stage.h>
+#include <storage/mem/mem_storage_stage.h>
 
 #include <common/conf/ini.h>
 #include <common/io/io.h>

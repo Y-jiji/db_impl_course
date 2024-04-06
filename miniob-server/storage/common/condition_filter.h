@@ -44,9 +44,9 @@ class DefaultConditionFilter : public ConditionFilter {
     DefaultConditionFilter();
     virtual ~DefaultConditionFilter();
 
-    RC init(const ConDesc& left, const ConDesc& right, AttrType attr_type,
+    ReturnCode init(const ConDesc& left, const ConDesc& right, AttrType attr_type,
             CompOp comp_op);
-    RC init(Table& table, const Condition& condition);
+    ReturnCode init(Table& table, const Condition& condition);
 
     virtual bool filter(const Record& rec) const;
 
@@ -69,8 +69,8 @@ class CompositeConditionFilter : public ConditionFilter {
     CompositeConditionFilter() = default;
     virtual ~CompositeConditionFilter();
 
-    RC init(const ConditionFilter* filters[], int filter_num);
-    RC init(Table& table, const Condition* conditions, int condition_num);
+    ReturnCode init(const ConditionFilter* filters[], int filter_num);
+    ReturnCode init(Table& table, const Condition* conditions, int condition_num);
     virtual bool filter(const Record& rec) const;
 
     public:
@@ -78,7 +78,7 @@ class CompositeConditionFilter : public ConditionFilter {
     const ConditionFilter& filter(int index) const { return *filters_[index]; }
 
     private:
-    RC init(const ConditionFilter* filters[], int filter_num, bool own_memory);
+    ReturnCode init(const ConditionFilter* filters[], int filter_num, bool own_memory);
 
     private:
     const ConditionFilter** filters_    = nullptr;
