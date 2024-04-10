@@ -259,6 +259,14 @@ Tuple merge_tuples(
   Tuple res_tuple;
   //TODO 先把每个字段都放到对应的位置上(temp_res)
   //TODO 再依次(orders)添加到大元组(res_tuple)里即可
+  for (auto tuple: temp_tuples) {
+    for (auto value: tuple->values()) {
+      temp_res.push_back(value);
+    }
+  }
+  for (auto i : orders) {
+    res_tuple.add(temp_res[i]);
+  }
 }
 
 // 这里没有对输入的某些信息做合法性校验，比如查询的列名、where条件中的列名等，没有做必要的合法性校验
@@ -354,29 +362,30 @@ RC ExecuteStage::do_select(const char *db, const Query *sql,
         const CompOp comp = condition.comp;
         const char *r_table_name = condition.right_attr.relation_name;
         const char *r_field_name = condition.right_attr.attribute_name;
-        temp_con.push_back(print_tuples.get_schema().index_of_field(
-                l_table_name, l_field_name));
+        temp_con.push_back(print_tuples.get_schema()
+          .index_of_field(l_table_name, l_field_name));
         temp_con.push_back(comp);
-        temp_con.push_back(print_tuples.get_schema().index_of_field(
-                r_table_name, r_field_name));
+        temp_con.push_back(print_tuples.get_schema()
+          .index_of_field(r_table_name, r_field_name));
         condition_idxs.push_back(temp_con);
       }
     }
-      //TODO 元组的拼接需要实现笛卡尔积
-      //TODO 将符合连接条件的元组添加到print_tables中
+    
+    // TODO 元组的拼接需要实现笛卡尔积
+    // TODO 将符合连接条件的元组添加到print_tables中
+    
 
-
-      print_tuples.print(ss);
-    } else {
-      // 当前只查询一张表，直接返回结果即可
-      tuple_sets.front().print(ss);
-    }
-    for (SelectExeNode *&tmp_node: select_nodes) {
-      delete tmp_node;
-    }
-    session_event->set_response(ss.str());
-    end_trx_if_need(session, trx, true);
-    return rc;
+    print_tuples.print(ss);
+  } else {
+    // 当前只查询一张表，直接返回结果即可
+    tuple_sets.front().print(ss);
+  }
+  for (SelectExeNode *&tmp_node: select_nodes) {
+    delete tmp_node;
+  }
+  session_event->set_response(ss.str());
+  end_trx_if_need(session, trx, true);
+  return rc;
 }
 
 
