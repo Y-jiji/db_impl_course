@@ -370,10 +370,11 @@ RC ExecuteStage::do_select(const char *db, const Query *sql,
         condition_idxs.push_back(temp_con);
       }
     }
-    
+
     // TODO 元组的拼接需要实现笛卡尔积
     // TODO 将符合连接条件的元组添加到print_tables中
-    
+    for (auto rit = tuple_sets.rbegin(), rend = tuple_sets.rend(); rit != rend; ++rit) {
+    }
 
     print_tuples.print(ss);
   } else {
