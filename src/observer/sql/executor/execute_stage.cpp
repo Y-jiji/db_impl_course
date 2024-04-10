@@ -389,8 +389,7 @@ RC ExecuteStage::do_select(const char *db, const Query *sql,
         print_tuples.add(std::move(tuple));
       }
       for (auto i = 0; i < iterators.size(); ++i) {
-        if (iterators[i] != tuple_sets[i].tuples().end()) continue;
-        if (i + 1 != iterators.size()) {
+        if (iterators[i] == tuple_sets[i].tuples().end() && i + 1 != iterators.size()) {
           iterators[i]   = tuple_sets[i].tuples().begin();
           iterators[i+1]++;
         }
