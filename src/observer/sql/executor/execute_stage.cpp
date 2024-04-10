@@ -13,6 +13,7 @@ See the Mulan PSL v2 for more details. */
 
 #include "execute_stage.h"
 
+#include <cstdio>
 #include <sstream>
 #include <string>
 
@@ -218,8 +219,35 @@ bool match_join_condition(const Tuple *res_tuple,
   // res_tuple 是 需要进行筛选的某一行
   // condition_idxs 是 C x 3 数组
   // 每一条的3个元素代表（左值的属性在新schema的下标，CompOp运算符，右值的属性在新schema的下标）
-  //TODO 判断表中某一行 res_tuple 是否满足多表联查条件即：左值=右值
-
+  // TODO 判断表中某一行 res_tuple 是否满足多表联查条件即：左值=右值
+  for (auto condition: condition_idxs) {
+    auto cmp = condition[1];
+    auto& left  = res_tuple->get(condition[0]);
+    auto& right = res_tuple->get(condition[2]);
+    auto res = left.compare(right);
+    switch (cmp) {
+      case CompOp::EQUAL_TO:
+        if (res != 0) return false;
+        break;
+      case CompOp::GREAT_EQUAL:
+        if (res < 0) return false;
+        break;
+      case CompOp::GREAT_THAN:
+        if (res <= 0) return false;
+        break;
+      case CompOp::LESS_EQUAL:
+        if (res > 0) return false;
+        break;
+      case CompOp::LESS_THAN:
+        if (res >= 0) return false;
+        break;
+      case CompOp::NOT_EQUAL:
+        if (res == 0) return false;
+        break;
+      case CompOp::NO_OP:
+        break;
+    }
+  }
   return true;
 }
 
@@ -287,10 +315,7 @@ RC ExecuteStage::do_select(const char *db, const Query *sql,
     // 本次查询了多张表，需要做join操作
     TupleSchema join_schema;
     TupleSchema old_schema;
-    for (std::vector<TupleSet>::const_reverse_iterator
-                 rit = tuple_sets.rbegin(),
-                 rend = tuple_sets.rend();
-         rit != rend; ++rit) {
+    for (auto rit = tuple_sets.rbegin(), rend = tuple_sets.rend(); rit != rend; ++rit) {
       // 这里是某张表投影完的所有字段，如果是select * from t1,t2;
       // old_schema=[t1.a, t1.b, t2.a, t2.b]
       old_schema.append(rit->get_schema());
@@ -301,7 +326,19 @@ RC ExecuteStage::do_select(const char *db, const Query *sql,
     // 如果是select * ，添加所有字段
     // 如果是select t1.*，表名匹配的加入字段
     // 如果是select t1.age，表名+字段名匹配的加入字段
-    print_tuples.set_schema(join_schema);
+    for (auto attr: selects.attributes) {
+      if (attr.relation_name == nullptr || attr.attribute_name == nullptr) {
+        continue;
+      }
+      auto fields = old_schema.fields();
+      for (auto i = size_t{0}; i < fields.size(); ++i) {
+        if (fields[i].field_name() != attr.attribute_name && 
+            attr.attribute_name != std::string{"*"}) continue;
+        if (fields[i].table_name() != attr.relation_name && 
+            attr.relation_name != std::string{"*"})  continue;
+        select_order.push_back(i);
+      }
+    }
 
     // 构建联查的conditions需要找到对应的表
     // C x 3 数组
@@ -325,8 +362,9 @@ RC ExecuteStage::do_select(const char *db, const Query *sql,
         condition_idxs.push_back(temp_con);
       }
     }
-    //TODO 元组的拼接需要实现笛卡尔积
-    //TODO 将符合连接条件的元组添加到print_tables中
+      //TODO 元组的拼接需要实现笛卡尔积
+      //TODO 将符合连接条件的元组添加到print_tables中
+
 
       print_tuples.print(ss);
     } else {
