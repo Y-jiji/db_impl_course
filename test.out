@@ -1,0 +1,145 @@
+miniob > FAILURE
+miniob > FAILURE
+miniob > FAILURE
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > SUCCESS
+miniob > t1.id | t1.sex | t2.id | t2.age
+0 | 8 | 0 | 11
+0 | 8 | 0 | 11
+0 | 9 | 0 | 11
+0 | 9 | 0 | 11
+0 | 10 | 0 | 11
+0 | 10 | 0 | 11
+0 | 11 | 0 | 11
+0 | 11 | 0 | 11
+1 | 8 | 1 | 11
+1 | 8 | 1 | 11
+1 | 9 | 1 | 11
+1 | 9 | 1 | 11
+1 | 10 | 1 | 11
+1 | 10 | 1 | 11
+1 | 11 | 1 | 11
+1 | 11 | 1 | 11
+2 | 8 | 2 | 11
+2 | 8 | 2 | 11
+2 | 9 | 2 | 11
+2 | 9 | 2 | 11
+2 | 10 | 2 | 11
+2 | 10 | 2 | 11
+2 | 11 | 2 | 11
+2 | 11 | 2 | 11
+3 | 8 | 3 | 11
+3 | 8 | 3 | 11
+3 | 9 | 3 | 11
+3 | 9 | 3 | 11
+3 | 10 | 3 | 11
+3 | 10 | 3 | 11
+3 | 11 | 3 | 11
+3 | 11 | 3 | 11
+4 | 8 | 4 | 11
+4 | 8 | 4 | 11
+4 | 9 | 4 | 11
+4 | 9 | 4 | 11
+4 | 10 | 4 | 11
+4 | 10 | 4 | 11
+4 | 11 | 4 | 11
+4 | 11 | 4 | 11
+0 | 8 | 0 | 11
+0 | 8 | 0 | 11
+0 | 9 | 0 | 11
+0 | 9 | 0 | 11
+0 | 10 | 0 | 11
+0 | 10 | 0 | 11
+0 | 11 | 0 | 11
+0 | 11 | 0 | 11
+1 | 8 | 1 | 11
+1 | 8 | 1 | 11
+1 | 9 | 1 | 11
+1 | 9 | 1 | 11
+1 | 10 | 1 | 11
+1 | 10 | 1 | 11
+1 | 11 | 1 | 11
+1 | 11 | 1 | 11
+2 | 8 | 2 | 11
+2 | 8 | 2 | 11
+2 | 9 | 2 | 11
+2 | 9 | 2 | 11
+2 | 10 | 2 | 11
+2 | 10 | 2 | 11
+2 | 11 | 2 | 11
+2 | 11 | 2 | 11
+3 | 8 | 3 | 11
+3 | 8 | 3 | 11
+3 | 9 | 3 | 11
+3 | 9 | 3 | 11
+3 | 10 | 3 | 11
+3 | 10 | 3 | 11
+3 | 11 | 3 | 11
+3 | 11 | 3 | 11
+4 | 8 | 4 | 11
+4 | 8 | 4 | 11
+4 | 9 | 4 | 11
+4 | 9 | 4 | 11
+4 | 10 | 4 | 11
+4 | 10 | 4 | 11
+4 | 11 | 4 | 11
+4 | 11 | 4 | 11
+miniob > 

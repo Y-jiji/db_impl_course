@@ -325,7 +325,7 @@ RC ExecuteStage::do_select(const char *db, const Query *sql,
     // 本次查询了多张表，需要做join操作
     TupleSchema join_schema;
     TupleSchema old_schema;
-    for (auto rit = tuple_sets.rbegin(), rend = tuple_sets.rend(); rit != rend; ++rit) {
+    for (auto rit = tuple_sets.begin(), rend = tuple_sets.end(); rit != rend; ++rit) {
       // 这里是某张表投影完的所有字段，如果是select * from t1,t2;
       // old_schema=[t1.a, t1.b, t2.a, t2.b]
       old_schema.append(rit->get_schema());
@@ -343,7 +343,7 @@ RC ExecuteStage::do_select(const char *db, const Query *sql,
         for (int i = 0; i < join_schema.fields().size(); ++i) {
           select_order.push_back(i);
         }
-        continue;
+        break;
       }
       if (attr.relation_name == nullptr || attr.attribute_name == nullptr) {
         continue;
@@ -351,10 +351,16 @@ RC ExecuteStage::do_select(const char *db, const Query *sql,
       auto fields = old_schema.fields();
       for (auto i = size_t{0}; i < fields.size(); ++i) {
         printf("table: %s.%s\n", fields[i].table_name(), fields[i].field_name());
-        if (fields[i].table_name() != attr.relation_name)  continue;
-        if (fields[i].field_name() != attr.attribute_name && 
-            attr.attribute_name != std::string{"*"}) continue;
-        select_order.push_back(i);
+        if (std::string{fields[i].table_name()} == std::string{attr.relation_name} 
+            && (
+              std::string{attr.attribute_name} == std::string{fields[i].field_name()} ||
+              std::string{attr.attribute_name} == std::string{"*"}
+            )
+        ) {
+          printf("match\n");
+          join_schema.add(fields[i]);
+          select_order.push_back(i);
+        }
       }
     }
     print_tuples.set_schema(join_schema);
@@ -410,11 +416,9 @@ RC ExecuteStage::do_select(const char *db, const Query *sql,
       for (auto i = 0; i < iterators.size(); ++i) {
         end = end && (iterators[i] == tuple_sets[i].tuples().begin());
       }
-      printf("end = %d\n", end);
       if (end) break;
     }
     print_tuples.print(ss);
-    printf("%s\n", ss.str().c_str());
   } else {
     // 当前只查询一张表，直接返回结果即可
     tuple_sets.front().print(ss);
