@@ -261,13 +261,14 @@ Tuple merge_tuples(
   //TODO 先把每个字段都放到对应的位置上(temp_res)
   //TODO 再依次(orders)添加到大元组(res_tuple)里即可
   for (auto tuple: temp_tuples) {
-    for (auto value: tuple->values()) {
+    for (auto& value: tuple->values()) {
       temp_res.push_back(value);
     }
   }
   for (auto i : orders) {
     res_tuple.add(temp_res[i]);
   }
+  return res_tuple;
 }
 
 // 这里没有对输入的某些信息做合法性校验，比如查询的列名、where条件中的列名等，没有做必要的合法性校验
@@ -336,18 +337,32 @@ RC ExecuteStage::do_select(const char *db, const Query *sql,
     // 如果是select t1.*，表名匹配的加入字段
     // 如果是select t1.age，表名+字段名匹配的加入字段
     for (auto attr: selects.attributes) {
+      printf("attr: %s.%s\n", attr.relation_name, attr.attribute_name);
+      if (attr.relation_name == nullptr && attr.attribute_name != nullptr && attr.attribute_name == std::string{"*"}) {
+        join_schema = old_schema;
+        for (int i = 0; i < join_schema.fields().size(); ++i) {
+          select_order.push_back(i);
+        }
+        continue;
+      }
       if (attr.relation_name == nullptr || attr.attribute_name == nullptr) {
         continue;
       }
       auto fields = old_schema.fields();
       for (auto i = size_t{0}; i < fields.size(); ++i) {
+        printf("table: %s.%s\n", fields[i].table_name(), fields[i].field_name());
+        if (fields[i].table_name() != attr.relation_name)  continue;
         if (fields[i].field_name() != attr.attribute_name && 
             attr.attribute_name != std::string{"*"}) continue;
-        if (fields[i].table_name() != attr.relation_name && 
-            attr.relation_name != std::string{"*"})  continue;
         select_order.push_back(i);
       }
     }
+    print_tuples.set_schema(join_schema);
+
+    for (auto i : select_order) {
+      printf("%d, ", i);
+    }
+    printf("\n");
 
     // 构建联查的conditions需要找到对应的表
     // C x 3 数组
@@ -379,24 +394,27 @@ RC ExecuteStage::do_select(const char *db, const Query *sql,
       iterators.push_back(tuple_sets[i].tuples().begin());
     }
     while (true) {
-      auto end = bool{true};
-      for (auto i = 0; i < iterators.size(); ++i) {
-        end = end && iterators[i] == tuple_sets[i].tuples().end();
-      }
-      if (end) break;
       auto tuple = merge_tuples(iterators, select_order);
       if (match_join_condition(&tuple, condition_idxs)) {
         print_tuples.add(std::move(tuple));
       }
       for (auto i = 0; i < iterators.size(); ++i) {
-        if (iterators[i] == tuple_sets[i].tuples().end() && i + 1 != iterators.size()) {
-          iterators[i]   = tuple_sets[i].tuples().begin();
-          iterators[i+1]++;
+        auto j = iterators.size() - 1 - i;
+        iterators[j]++;
+        if (iterators[j] != tuple_sets[j].tuples().end()) {
+          break;
         }
+        iterators[j] = tuple_sets[j].tuples().begin();
       }
+      auto end = bool{true};
+      for (auto i = 0; i < iterators.size(); ++i) {
+        end = end && (iterators[i] == tuple_sets[i].tuples().begin());
+      }
+      printf("end = %d\n", end);
+      if (end) break;
     }
-
     print_tuples.print(ss);
+    printf("%s\n", ss.str().c_str());
   } else {
     // 当前只查询一张表，直接返回结果即可
     tuple_sets.front().print(ss);
