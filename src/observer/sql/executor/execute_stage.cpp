@@ -16,6 +16,7 @@ See the Mulan PSL v2 for more details. */
 #include <cstdio>
 #include <sstream>
 #include <string>
+#include <vector>
 
 #include "common/io/io.h"
 #include "common/lang/string.h"
@@ -373,7 +374,27 @@ RC ExecuteStage::do_select(const char *db, const Query *sql,
 
     // TODO 元组的拼接需要实现笛卡尔积
     // TODO 将符合连接条件的元组添加到print_tables中
-    for (auto rit = tuple_sets.rbegin(), rend = tuple_sets.rend(); rit != rend; ++rit) {
+    auto iterators = std::vector<std::vector<Tuple>::const_iterator>();
+    for (auto i = 0; i < tuple_sets.size(); ++i) {
+      iterators.push_back(tuple_sets[i].tuples().begin());
+    }
+    while (true) {
+      auto end = bool{true};
+      for (auto i = 0; i < iterators.size(); ++i) {
+        end = end && iterators[i] == tuple_sets[i].tuples().end();
+      }
+      if (end) break;
+      auto tuple = merge_tuples(iterators, select_order);
+      if (match_join_condition(&tuple, condition_idxs)) {
+        print_tuples.add(std::move(tuple));
+      }
+      for (auto i = 0; i < iterators.size(); ++i) {
+        if (iterators[i] != tuple_sets[i].tuples().end()) continue;
+        if (i + 1 != iterators.size()) {
+          iterators[i]   = tuple_sets[i].tuples().begin();
+          iterators[i+1]++;
+        }
+      }
     }
 
     print_tuples.print(ss);
