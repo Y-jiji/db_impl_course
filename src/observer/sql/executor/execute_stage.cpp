@@ -399,7 +399,11 @@ RC ExecuteStage::do_select(const char *db, const Query *sql,
     for (auto i = 0; i < tuple_sets.size(); ++i) {
       iterators.push_back(tuple_sets[i].tuples().begin());
     }
-    while (true) {
+    auto all_end = true;
+    for (auto i = 0; i < tuple_sets.size(); ++i) {
+	all_end = all_end && tuple_sets[i].tuples().begin() == tuple_sets[i].tuples().end();
+    }
+    while (!all_end) {
       auto tuple = merge_tuples(iterators, select_order);
       if (match_join_condition(&tuple, condition_idxs)) {
         print_tuples.add(std::move(tuple));
